@@ -85,7 +85,10 @@ are using Linktool as a tool, Sakai will obviously know the current
 username. If you are calling it as a URL, Sakai will look at your
 Sakai session cookie, and pull the username out of the session.
 Obviously this will only work if the current browser has already
-logged into sakai.
+logged into sakai. 
+
+  euid - the enterprise username. This is what most people think
+of as the username. user is an internal Sakai identifier
 
   site - If you are using Linktool as a tool, this is the user's
 current site, which is the site in which Linktool is installed. If you
@@ -100,6 +103,17 @@ this. In principle a user could create a site with non-standard role
 names. If you're dealing with grading or other functions like that
 it's probably safer to use isUserAbleToGradeStudent from SakaiGradebook.jws
 to check permission.
+
+  serverurl - This is the url to call back to the server. To be
+secure, this must be SSL, and your software must check the certificate.
+This is needed because PHP applications may talk to more than one
+Sakai implementation. When you get a call, you'll need to talk to
+web services on the specific sakai server that called you.  This
+URL is normally serverUrl in sakai.properties. However if necessary
+you can override it using sakai.rutgers.linktool.serverUrl.
+
+  time - internal Java ms time, used to prevent replays. You
+must call testsign or getsession with 30 sec, or the check will fail.
 
   sign - This is a digital signature. This is necessary because
 your application needs to be assured that the specified user has
@@ -163,6 +177,13 @@ if you get any errors, you can do checkSession(id) from
 SakaiSession.jws. It will return either a string describing the
 attributes of the session, or "Session Null". If you get Session Null,
 you will have to try reestablishing the session.
+
+Note that the session privilege objects are only valid for a
+specific Sakai installation. I recommend that you keep your
+session authorization objects in a data structured that is indexed by sakai
+site. Then you will only present an authorization object to the
+site it applies to. This is necessary to avoid having a rogue site
+find out authorization objects for another site.
 
 
 PRECONFIGURING AN INSTANCE OF THE TOOL

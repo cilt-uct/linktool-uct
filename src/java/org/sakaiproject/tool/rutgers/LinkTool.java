@@ -186,7 +186,7 @@ public class LinkTool extends HttpServlet
 	/**
 	 * Respond to Get requests:
 	 *   display main content by redirecting to it and adding
-	 *     user= site= role= sign=
+	 *     user= euid= site= role= serverurl= time= sign=
 	 *   for privileged users, add a bar at the top with a link to
 	 *     the setup screen
 	 *   ?Setup generates the setup screen
@@ -209,6 +209,7 @@ public class LinkTool extends HttpServlet
    	      config = placement.getConfig();
 	    PrintWriter out = res.getWriter();
 	    String userid = null;
+	    String euid = null;
 	    String siteid = null;
 	    String url = null;
 	    String command = null;
@@ -233,7 +234,11 @@ public class LinkTool extends HttpServlet
 	    if (s != null) {
 		// System.out.println("got session " + s.getId());
 		userid = s.getUserId();
+		euid = s.getUserEid();
 	    }
+
+	    if (userid != null && (euid == null || euid.equals("")))
+		euid = userid;
 
 	    // site is there only for tools, otherwise have to use user's arg
 	    // this is safe because we verify that the user has a role in site
@@ -272,6 +277,7 @@ public class LinkTool extends HttpServlet
 	    if (url != null && userid != null && siteid != null && rolename != null) {
 		// command is the thing that will be signed
 		command = "user=" + URLEncoder.encode(userid) + 
+		    "&euid=" + URLEncoder.encode(euid) + 
 		    "&site=" + URLEncoder.encode(siteid) + 
 		    "&role=" + URLEncoder.encode(rolename) +
 		    "&serverurl=" + URLEncoder.encode(ourUrl) +
