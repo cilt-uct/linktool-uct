@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+
+<registration>
+
+	<tool
+			id="sakai.rutgers.linktool"
+			title="Link Tool"
+			description="A tool to link to external applications.">
+
+		<configuration name="url" value="http://rulink.rutgers.edu/testlink.php" />
+		<configuration name="height" value="600px" />
+                <category name="course" />
+                <category name="project" />
+
+		<keyword name="linktool" />
+
+	</tool>
+
+</registration>

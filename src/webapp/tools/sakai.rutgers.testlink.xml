@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+
+<registration>
+
+	<tool
+			id="sakai.rutgers.testlink"
+			title="Test Link"
+			description="A test of the link tool.">
+
+		<configuration name="url" value="https://rulink.rutgers.edu/testlink.php" />
+		<configuration name="height" value="600px" />
+                <category name="course" />
+                <category name="project" />
+
+		<keyword name="linktool" />
+
+	</tool>
+
+</registration>

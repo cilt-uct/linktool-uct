@@ -1,0 +1,235 @@
+/*
+ *   SakaiSigning.jws
+ *
+ */
+ 
+import java.util.Date;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.Collection;
+import org.sakaiproject.tool.api.Session;
+import org.sakaiproject.tool.cover.SessionManager;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import org.sakaiproject.authz.cover.AuthzGroupService;
+import org.sakaiproject.authz.api.AuthzGroup;
+import org.sakaiproject.authz.api.Role;
+
+import org.sakaiproject.user.cover.UserDirectoryService;
+import org.sakaiproject.tool.api.Tool;
+import org.sakaiproject.site.api.ToolConfiguration;
+
+import org.sakaiproject.site.api.Site;
+import org.sakaiproject.site.api.SitePage;
+
+import org.sakaiproject.user.api.UserEdit;
+import org.sakaiproject.user.api.User;
+
+import org.sakaiproject.tool.cover.ToolManager;
+import org.sakaiproject.site.cover.SiteService;
+
+import org.sakaiproject.authz.cover.SecurityService;
+
+import org.sakaiproject.service.gradebook.shared.GradebookService;
+import org.sakaiproject.service.gradebook.shared.Assignment;
+import org.sakaiproject.component.cover.ServerConfigurationService;
+
+import java.util.Properties;
+import java.util.Calendar;
+import org.apache.axis.AxisFault;
+
+import org.sakaiproject.util.Xml;
+//import org.w3c.dom.Document;
+//import org.w3c.dom.Element;
+//import org.w3c.dom.Node;
+//import org.w3c.dom.NodeList;
+
+import java.io.*;
+
+import java.security.*;
+import java.security.spec.*;
+import java.security.interfaces.*;
+
+import javax.crypto.*;
+import javax.crypto.spec.*;
+import javax.crypto.interfaces.*;
+
+
+public class SakaiSigning {
+
+    private static PublicKey pubKey;
+    private static byte[] salt;
+
+    private static boolean verify(String data, byte[] sigbytes) throws Exception {
+	if (pubKey == null)
+	    pubKey = readPublicKey();
+	if (salt == null)
+	    salt = readSalt();
+        Signature sig = Signature.getInstance("SHA1withRSA");
+        sig.initVerify(pubKey);
+        sig.update(data.getBytes());
+	if (salt != null)
+	    sig.update(salt);
+        return sig.verify(sigbytes);
+    }
+
+    private Session establishSession(String id) throws AxisFault {
+	Session s = SessionManager.getSession(id);
+	
+	if (s == null)
+	{
+		throw new AxisFault("Session "+id+" is not active");
+	}
+	s.setActive();
+	SessionManager.setCurrentSession(s);
+	return s;
+    }
+
+    public String testsign(String data) throws AxisFault {
+//	Session s = establishSession(sessionid);
+
+	int i = data.indexOf("&time=");
+	int j = data.indexOf("&", i+6);
+	String time = data.substring(i+6,j);
+	long mstime = java.lang.Long.parseLong(time);
+
+	if (java.lang.Math.abs(mstime - System.currentTimeMillis()) > 30000)
+	  return "stale value";
+
+	i = data.lastIndexOf("&");
+	String sign = data.substring(i+6);
+	data = data.substring(0, i);
+
+        boolean result = false;
+
+	try {
+
+        result = verify(data, hex2byte(sign));
+//        System.out.println("Signature Verification Result = " + result);
+
+	} catch (Exception e) {  
+		return e.getClass().getName() + " : " + e.getMessage();
+	}
+	if (result)
+ 	 return "true";
+        else
+         return "false";
+
+}
+
+    public String getsession(String data, String object) throws AxisFault {
+//	Session s = establishSession(sessionid);
+
+	// Check user data
+
+	String sresult = testsign(data);
+	if (!sresult.equals("true"))
+          throw new AxisFault("failed on user data");
+
+	// Check session object
+
+	int i = object.lastIndexOf("&");
+	String sign = object.substring(i+6);
+	object = object.substring(0, i);
+
+        boolean result = false;
+
+	try {
+
+        result = verify(object, hex2byte(sign));
+//        System.out.println("Signature Verification Result = " + result);
+
+	} catch (Exception e) {  
+	    throw new AxisFault(e.getClass().getName() + " : " + e.getMessage());
+	}
+	if (!result)
+          throw new AxisFault("failed on session object");
+
+	if (object.equals("currentuser") && data.substring(0,5).equals("user=")) {
+	   return makesession(data);
+	} else if (object.substring(0, 5).equals("user=")) {
+	   return makesession(object);
+	} else
+	  throw new AxisFault("invalid session object");
+
+    }
+
+    private String makesession(String spec) throws AxisFault {
+	
+           String user = spec.substring(5);
+	   int i;
+
+	   i = user.indexOf("&");
+	   if (i > 0)
+	     user = user.substring(0, i);
+
+	   Session s = SessionManager.startSession();
+	   if (s == null)
+	       throw new AxisFault("Unable to establish session");
+
+//	   System.out.println("creating session for " + user);
+	   s.setUserId(user);
+	   s.setUserEid(user);
+
+	   return s.getId();
+    }
+
+    public static byte[] hex2byte(String strhex) {
+     // System.out.println("hex2byte " + strhex); 
+
+        if(strhex==null) return null;
+	int l = strhex.length();
+ 
+	if(l %2 ==1) return null;
+        byte[] b = new byte[l/2];
+        for(int i = 0 ; i < l/2 ;i++){
+            b[i] = (byte)Integer.parseInt(strhex.substring(i *2,i*2 +2),16);
+        }
+        return b;
+    }
+
+    private static PublicKey readPublicKey() throws Exception { 
+
+	String homedir = ServerConfigurationService.getSakaiHomePath();
+	if (homedir == null)
+	    homedir = "/etc/";
+	String filename = homedir + "sakai.rutgers.linktool.pubkey";
+//	System.out.println("sakaisigning.jws: " + filename);
+	FileInputStream file = new FileInputStream(filename);
+	byte[] bytes = new byte[file.available()];
+	file.read(bytes);
+	file.close();
+	X509EncodedKeySpec pubspec = new X509EncodedKeySpec(bytes);
+	KeyFactory factory = KeyFactory.getInstance("RSA");
+	PublicKey pubkey = factory.generatePublic(pubspec);
+	return pubkey;
+    }
+
+    /* our salt from a file. returns the salt
+     * 
+     * @param filename
+     *        Contains the salt as a byte stream
+     */
+
+    private static byte[] readSalt() {
+	try {
+	    String homedir = ServerConfigurationService.getSakaiHomePath();
+	    if (homedir == null)
+		homedir = "/etc/";
+	    String filename = homedir + "sakai.rutgers.linktool.salt";
+	    FileInputStream file = new FileInputStream(filename);
+	    byte[] bytes = new byte[file.available()];
+	    file.read(bytes);
+	    file.close();
+	    return bytes;
+	} catch (Exception ignore) {
+	    return null;
+	}
+    }
+
+}
+
