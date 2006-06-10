@@ -25,7 +25,8 @@ var _editor_url = "/library/htmlarea/"
   // allow more than one sakai server to use the same PHP script and to make
   // sure we don't present one of these objects to a rogue site. 
 
-  $obj["http://localhost:8080"] = "user=1e307359-c975-4324-80e7-54837b3ad475&sign=10110eb7bf9381bff55d816e60b4ec2c7ee97d856e309c6aeef9ad70f6bdd6c8dc59dd97168c2a48080cbcdd65463b7afda35823c02409016a92c248edbba8c4ffe78cb853d1bf3ea4640297f03b700ec39a9993bdd9e7d28c6268ecb9468b454685ffa7df50e5acbf7ae519b04fa15fc5dfff096ff1566d6978f75b609a1d04";
+  $obj["http://localhost:8080"] = "user=1e307359-c975-4324-80e7-54837b3ad475&sign=73bb0216a339079f734b3e258939dbe2ba4dff03";
+  $obj["http://localhost:8080"] = "currentuser&sign=cb9c03f113189f2476eac856419475cee03b6068";
 
   // to avoid cross-site scripting problems, arguments should be passed
   // through strip_tags unless you're sure you know what you're doing
@@ -33,19 +34,23 @@ var _editor_url = "/library/htmlarea/"
   $euid = strip_tags($_GET['euid']);
   $site = strip_tags($_GET['site']);
   $server = strip_tags($_GET['serverurl']);
+  $sessionid = strip_tags($_GET['session']);
   $url = geturl($server);
 
   // in a real application these should be session variables, to avoid
   // parsing wsdl for each page
   $signingProxy = getproxy($url, "SakaiSigning");
   $siteProxy = getproxy($url, "SakaiSite");
-///  $infoProxy = getproxy($url, "SakaiRutgersInfo");
-///  $gbProxy = getproxy($url, "SakaiGradebook");
+  $infoProxy = getproxy($url, "SakaiRutgersInfo");
+  $gbProxy = getproxy($url, "SakaiGradebook");
 
   // standard code to verify the arguments passed to us. 
   $result=$signingProxy->testsign($_SERVER['QUERY_STRING']);
   if ($result != "true")
     fatal("Unauthorized call");
+
+  $result=$signingProxy->touchsession($sessionid);
+  print("<p>touch session: $result");
 
   // get a session for doing other web services. This also validates
   // the arguments, so you don't need to do testsign if you're doing
@@ -60,13 +65,12 @@ var _editor_url = "/library/htmlarea/"
   $sites = str_replace("<", "&lt;", $sites);
   print "<p>$euid ($user) can access the following sites:<pre>$sites</pre>";
 
-/*
   // see what courses are associated with the current site
-  $courses = $infoProxy->getSiteCourses($session, "4e984255-8852-4d1e-8016-3ae1286d5687");
+  $courses = $infoProxy->getSiteCourses($session, $site);
   print "<p>Site $site has the following courses: $courses";
 
   // See whether user can update the site
-  $allow = $infoProxy->allowUpdateSite($session, "4e984255-8852-4d1e-8016-3ae1286d5687");
+  $allow = $infoProxy->allowUpdateSite($session, $site);
   print "<p>Can $user update $site? $allow";
 
   // get basic info on user. result is XML
@@ -74,11 +78,16 @@ var _editor_url = "/library/htmlarea/"
   $userinfo = str_replace("<", "&lt;", $userinfo);
   print "<p>Info on $user:<pre>$userinfo</pre>";
 
+  // get basic info on user. result is XML
+  $userinfo = $infoProxy->getEidInfo($session, $euid);
+  $userinfo = str_replace("<", "&lt;", $userinfo);
+  print "<p>Info on $euid:<pre>$userinfo</pre>";
+
+
   // does user have grading access? clh is probably nonexistent, so
   // this tests whether the user has access to all students
   $allow = $gbProxy->isUserAbleToGradeStudent($session, $site, "clh");
   print "<p>Can $user grade students? $allow";
-*/
 
 /////// functions
 

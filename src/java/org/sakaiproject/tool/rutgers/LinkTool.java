@@ -208,6 +208,7 @@ public class LinkTool extends HttpServlet
 	    String userid = null;
 	    String euid = null;
 	    String siteid = null;
+	    String sessionid = null;
 	    String url = null;
 	    String command = null;
 	    String signature = null;
@@ -232,6 +233,7 @@ public class LinkTool extends HttpServlet
 		// System.out.println("got session " + s.getId());
 		userid = s.getUserId();
 		euid = s.getUserEid();
+		sessionid = s.getId();
 	    }
 
 	    if (userid != null && (euid == null || euid.equals("")))
@@ -269,14 +271,18 @@ public class LinkTool extends HttpServlet
 		rolename = r.getId();
 	    }
 
+	    if (sessionid != null)
+		sessionid = encrypt(sessionid);
+
 	    // generate redirect, as url?user=xxx&site=xxx
 
-	    if (url != null && userid != null && siteid != null && rolename != null) {
+	    if (url != null && userid != null && siteid != null && rolename != null && sessionid != null) {
 		// command is the thing that will be signed
 		command = "user=" + URLEncoder.encode(userid) + 
 		    "&euid=" + URLEncoder.encode(euid) + 
 		    "&site=" + URLEncoder.encode(siteid) + 
 		    "&role=" + URLEncoder.encode(rolename) +
+		    "&session=" + URLEncoder.encode(sessionid) +
 		    "&serverurl=" + URLEncoder.encode(ourUrl) +
 		    "&time=" + System.currentTimeMillis();
 		try {
@@ -795,6 +801,37 @@ public class LinkTool extends HttpServlet
 	    } catch (Exception e) {
 		e.printStackTrace();
 	    }
+	}
+
+        public String encrypt(String str) {
+	    try {
+		Cipher ecipher = Cipher.getInstance("Blowfish");
+		ecipher.init(Cipher.ENCRYPT_MODE, secretKey);
+
+		// Encode the string into bytes using utf-8
+		byte[] utf8 = str.getBytes("UTF8");
+
+		// Encrypt
+		byte[] enc = ecipher.doFinal(utf8);
+    
+		// Encode bytes to base64 to get a string
+		return byteArray2Hex(enc);
+	    } catch (javax.crypto.BadPaddingException e) {
+		System.out.println("linktool encrypt bad padding");
+	    } catch (javax.crypto.IllegalBlockSizeException e) {
+		System.out.println("linktool encrypt illegal block size");
+	    } catch (java.security.NoSuchAlgorithmException e) {
+		System.out.println("linktool encrypt no such algorithm");
+	    } catch (java.security.InvalidKeyException e) {
+		System.out.println("linktool encrypt invalid key");
+	    } catch (javax.crypto.NoSuchPaddingException e) {
+		System.out.println("linktool encrypt no such padding");
+	    } catch (java.io.UnsupportedEncodingException e) {
+		System.out.println("linktool encrypt unsupported encoding");
+	    } catch (java.io.IOException e) {
+		System.out.println("linktool encrypted io exc");
+	    }
+	    return null;
 	}
 
 }

@@ -62,10 +62,11 @@ import javax.crypto.interfaces.*;
 public class SakaiSigning {
 
     private static SecretKey salt;
+    private static SecretKey privateKey;
 
     private static boolean verify(String data, String sign) throws Exception {
 	if (salt == null)
-	   salt = readSalt();
+	   salt = readSecretKey("salt", "HmacSHA1");
 	Mac sig = Mac.getInstance("HmacSHA1");
         sig.init(salt);
         return sign.equals(byteArray2Hex(sig.doFinal(data.getBytes())));
@@ -184,23 +185,55 @@ public class SakaiSigning {
 	   return s.getId();
     }
 
-    /* our salt from a file. returns the salt
-     * 
-     * @param filename
-     *        Contains the salt as a byte stream
-     */
+    public String touchsession(String esession) throws AxisFault {
 
-    private static SecretKey readSalt() {
+// no security; you can't do anything damaging with this
+// you just prevent a session from timing out
+
+	Session s = null;
+	String sessionid = decrypt(esession);
+
+	if (sessionid != null)
+	  s = SessionManager.getSession(sessionid);
+	
+	if (s == null)
+	{
+		throw new AxisFault("Session "+esession+" is not active");
+	}
+
+	s.setActive();
+	return "success";
+    }
+
+    private static String decrypt (String enc) {
+	if (privateKey == null)
+	   privateKey = readSecretKey("privkey", "Blowfish");
+
+	try {
+	  Cipher dcipher = Cipher.getInstance("Blowfish");
+	  dcipher.init(Cipher.DECRYPT_MODE, privateKey);
+	  byte[] dec = hex2byte(enc);
+	  // Decrypt
+          byte[] utf8 = dcipher.doFinal(dec);
+          // Decode using utf-8
+          return new String(utf8, "UTF8");
+        } catch (Exception ignore) {
+          System.out.println("SakaiSigning unable to use blowfish");
+        }
+	return null;
+    }
+
+    private static SecretKey readSecretKey(String name, String alg) {
 	try {
 	    String homedir = ServerConfigurationService.getSakaiHomePath();
 	    if (homedir == null)
 		homedir = "/etc/";
-	    String filename = homedir + "sakai.rutgers.linktool.salt";
+	    String filename = homedir + "sakai.rutgers.linktool." + name;
 	    FileInputStream file = new FileInputStream(filename);
 	    byte[] bytes = new byte[file.available()];
 	    file.read(bytes);
 	    file.close();
-	    SecretKey privkey = new SecretKeySpec(bytes, "HmacSHA1");
+	    SecretKey privkey = new SecretKeySpec(bytes, alg);
             return privkey;
 	} catch (Exception ignore) {
 	    return null;
@@ -228,6 +261,20 @@ public class SakaiSigning {
 	    sb.append("" + hexChars[hbits] + hexChars[lbits]);
 	}
 	return sb.toString();
+    }
+
+    public static byte[] hex2byte(String strhex) {
+	// System.out.println("hex2byte " + strhex); 
+
+        if(strhex==null) return null;
+        int l = strhex.length();
+	
+        if(l %2 ==1) return null;
+        byte[] b = new byte[l/2];
+        for(int i = 0 ; i < l/2 ;i++){
+            b[i] = (byte)Integer.parseInt(strhex.substring(i *2,i*2 +2),16);
+        }
+        return b;
     }
 
 }
