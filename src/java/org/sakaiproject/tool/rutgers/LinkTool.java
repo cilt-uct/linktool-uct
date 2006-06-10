@@ -103,16 +103,14 @@ public class LinkTool extends HttpServlet
 	private static Log M_log = LogFactory.getLog(LinkTool.class);
 
         private static String homedir = null;
-        private static PrivateKey prvKey = null;
-        private static byte[] salt = null;
-        private static final int saltLength = 20;
+        private static SecretKey secretKey = null;
+        private static SecretKey salt = null;
         private static String ourUrl = null;
 
 	/** Helper tool for options. */
 	private static final String OPTIONS_HELPER = "sakai.tool_config.helper";
 
         private static final String privkeyname = "sakai.rutgers.linktool.privkey";
-        private static final String pubkeyname = "sakai.rutgers.linktool.pubkey";
         private static final String saltname = "sakai.rutgers.linktool.salt";
 
 	/**
@@ -142,23 +140,22 @@ public class LinkTool extends HttpServlet
 		//		System.out.println("canread " + homedir + pubkeyname + (new File(homedir + pubkeyname)).canRead());
 		//		System.out.println("canread " + homedir + privkeyname + (new File(homedir + privkeyname)).canRead());
 
-		if (!(new File(homedir + pubkeyname)).canRead() ||
-		    !(new File(homedir + privkeyname)).canRead()) {
-		    genkeys(homedir);
+		if (!(new File(homedir + privkeyname)).canRead()) {
+		    genkey(homedir);
 		}
 
 		//		System.out.println("canread public " + (new File(homedir + pubkeyname)).canRead());
 		//		System.out.println("canread private " + (new File(homedir + privkeyname)).canRead());
 
-		prvKey = readPrivateKey(homedir + privkeyname);
-		//		if (prvKey != null)
+		secretKey = readSecretKey(homedir + privkeyname, "Blowfish");
+		//		if (secretKey != null)
 		//		    System.out.println("got private key");
 
 		if (!(new File(homedir + saltname)).canRead()) {
 		    gensalt(homedir);
 		}
 
-		salt = readSalt(homedir + saltname);
+		salt = readSecretKey(homedir + saltname, "HmacSHA1");
 
 		ourUrl = ServerConfigurationService.getString("sakai.rutgers.linktool.serverUrl");
 		// System.out.println("linktool url " + ourUrl);
@@ -681,30 +678,25 @@ public class LinkTool extends HttpServlet
 	 */
 
 	private static String sign(String data) throws Exception {
-	    Signature sig = Signature.getInstance("SHA1WithRSA");
-	    sig.initSign(prvKey);
-	    sig.update(data.getBytes());
-	    if (salt != null)
-		sig.update(salt);
-	    return byteArray2Hex(sig.sign());
-	}
+	    Mac sig = Mac.getInstance("HmacSHA1");
+	    sig.init(salt);
+            return byteArray2Hex(sig.doFinal(data.getBytes()));
+        }
 
 	/**
-	 * Read our private key from a file. returns the key
+	 * Read our secret key from a file. returns the key
 	 * 
 	 * @param filename
 	 *        Contains the key in proper binary format
 	 */
 
-	private static PrivateKey readPrivateKey(String filename) {
+	private static SecretKey readSecretKey(String filename, String alg) {
 	    try {
 		FileInputStream file = new FileInputStream(filename);
 		byte[] bytes = new byte[file.available()];
 		file.read(bytes);
 		file.close();
-		PKCS8EncodedKeySpec privspec = new PKCS8EncodedKeySpec(bytes);
-		KeyFactory factory = KeyFactory.getInstance("RSA");
-		PrivateKey privkey = factory.generatePrivate(privspec);
+		SecretKey privkey = new SecretKeySpec(bytes, alg);
 		return privkey;
 	    } catch (Exception ignore) {
 		return null;
@@ -746,49 +738,35 @@ public class LinkTool extends HttpServlet
 	    return s.trim();
 	}
 
-        // genkeys
+        // genkey
 
         // from http://www.cs.ru.nl/~martijno/
         // Martijn Oostdijk. by permission
 
 	/**
-	 * Generate a public/private key pair, and write them to files
+	 * Generate a secret key, and write it to a file
 	 * 
 	 * @param dirname
-	 *        writes to files pubkeyname and privkeyname in this 
+	 *        writes to file privkeyname in this 
 	 *        directory. dirname assumed to end in /
 	 */
 
-        private void genkeys(String dirname) {
+        private void genkey(String dirname) {
 	    try {
-		/* Generate keypair. */
-		System.out.println("Generating keys...");
-		KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
-		generator.initialize(1024);
-		KeyPair keypair = generator.generateKeyPair();
-		RSAPublicKey publickey = (RSAPublicKey)keypair.getPublic();
-		RSAPrivateKey privatekey = (RSAPrivateKey)keypair.getPrivate();
-
-		/* Write public key to file. */
-		writeKey(publickey, dirname + pubkeyname);
+		/* Generate key. */
+		System.out.println("Generating key...");
+		SecretKey key = KeyGenerator.getInstance("Blowfish").generateKey();
 
 		/* Write private key to file. */
-		writeKey(privatekey, dirname + privkeyname);
+		writeKey(key, dirname + privkeyname);
 
-		//	    System.out.println("modulus = " + publickey.getModulus());
-		//	    System.out.println("pubexpint = " + publickey.getPublicExponent());
-		//	    System.out.println("privexpint = " + privatekey.getPrivateExponent());
 	    } catch (Exception e) {
 		e.printStackTrace();
 	    }
 	}
 
         /**
-	 * Writes <code>key</code> to file with name <code>filename</code> in
-	 * standard encoding (X.509 for RSA public key, PKCS#8 for RSA private key).
-	 *
-	 * @param key the key to write.
-	 * @param filename the name of the file.
+	 * Writes <code>key</code> to file with name <code>filename</code>
 	 *
 	 * @throws IOException if something goes wrong.
 	 */
@@ -810,48 +788,14 @@ public class LinkTool extends HttpServlet
 
         private void gensalt(String dirname) {
 	    try {
-
-		SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
-		byte bytes[] = new byte[saltLength];
-		random.nextBytes(bytes);
-		writeSalt(bytes, dirname + saltname);
+		// Generate a key for the HMAC-SHA1 keyed-hashing algorithm
+		KeyGenerator keyGen = KeyGenerator.getInstance("HmacSHA1");
+		SecretKey key = keyGen.generateKey();
+		writeKey(key, dirname + saltname);
 	    } catch (Exception e) {
 		e.printStackTrace();
 	    }
 	}
-
-        /**
-	 * Writes salt to a file
-	 * @param salt the salt to write.
-	 * @param filename the name of the file.
-	 *
-	 * @throws IOException if something goes wrong.
-	 */
-        private static void writeSalt(byte[] salt, String filename) throws IOException {
-	    FileOutputStream file = new FileOutputStream(filename);
-	    file.write(salt);
-	    file.close();
-	}
-
-	/**
-	 * Read our salt from a file. returns the salt
-	 * 
-	 * @param filename
-	 *        Contains the salt as a byte stream
-	 */
-
-	private static byte[] readSalt(String filename) {
-	    try {
-		FileInputStream file = new FileInputStream(filename);
-		byte[] bytes = new byte[file.available()];
-		file.read(bytes);
-		file.close();
-		return bytes;
-	    } catch (Exception ignore) {
-		return null;
-	    }
-	}
-
 
 }
 

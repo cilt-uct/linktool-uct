@@ -6,19 +6,17 @@ There are two modes: install as tool, and call via URL
 
 SETUP
 
-The first time you deploy this, private and public keys, as well as a
-random number that I'm calling a salt, will be placed in the sakai
+The first time you deploy this, two keys will be placed in the sakai
 configuration directory (e.g. /usr/local/tomcat/sakai). If that
 directory is not defined, they are put in /etc. The file names are
-sakai.rutgers.linktool.privkey, sakai.rutgers.linktool.pubkey, and
-sakai.rutgers.linktool.salt. In multisystem configurations you will
-want to use the same keys and salt on all systems. The session
-authorization objects are signed with this key, and they should work
-on all systems. If you somehow lose these keys, new ones will be
-generated. This will invalidate all existing session authorization
-objects. You may actually want to delete the keys and recreate them
-now and then, to force everyone to reissue all of the session
-authorization objects.
+sakai.rutgers.linktool.privkey and sakai.rutgers.linktool.salt. In
+multisystem configurations you will want to use the same key and salt
+on all systems. The session authorization objects are signed with this
+key, and they should work on all systems. If you somehow lose these
+keys, new ones will be generated. This will invalidate all existing
+session authorization objects. You may actually want to delete the
+keys and recreate them now and then, to force everyone to reissue all
+of the session authorization objects.
 
 SakaiSigning.jws should go in .../webapps/sakai-axis. Note that
 you do not need to set webservices.allowlogin. That controls login
@@ -113,7 +111,7 @@ URL is normally serverUrl in sakai.properties. However if necessary
 you can override it using sakai.rutgers.linktool.serverUrl.
 
   time - internal Java ms time, used to prevent replays. You
-must call testsign or getsession with 30 sec, or the check will fail.
+must call testsign within 30 sec, or the check will fail.
 
   sign - This is a digital signature. This is necessary because
 your application needs to be assured that the specified user has
@@ -299,17 +297,25 @@ This indicates that a session should be created for the current end
 user. (Actually it should probably return the actual current session,
 but at the moment it creates a new one owned by the same person.)
 
-Here's a call to getsession:
+There are two forms of call to getsession
 
   $result=$myProxy->getsession($_SERVER['QUERY_STRING'], $obj);
+  $result=$myProxy->getsession($obj);
 
-where $obj is one of the session privilege objects. The query string
-is checked. Thus there's no need to do a testsign, since getsession
-includes its functions. This includes checking the time stamp. I.e.
-this operation must be done within 30 sec of the start of the session.
+where $obj is one of the session privilege objects. If you supply the
+query string it is checked, except that the time is not checked.
+That's because this operation might reasonably be done long after
+the initial connection (e.g. at the end when you're about to report
+grades). At that point the time might be past. For this reason,
+you should always do testsign at the beginning, even if you're going
+to do getsession with both arguments.
 
-If $result is a string, it will be a session ID. Errors result in
-Axis error objects, which are not simple strings.
+The only time you need to pass the query string is when the object is
+of the form "currentuser..." In that case we need to know who the
+current user is. That comes from the initial query string.
+
+If $result is a string, it will be a session ID. Errors result in Axis
+error objects, which are not simple strings.
 
 The current implementation is very limited. I intend to extend the
 objects to allow things like restrictions to specific IP addresses.
@@ -323,7 +329,11 @@ compromise the privacy of other users.
 
 If a superuser got into setup mode in any link tool, they will be
 presented with the ability to generate session privilege objects for
-any user, and for currentuser.
+any user, and for currentuser.  Currentuser should only be given
+to applications that you trust, since it allows the application to
+become any user for which the application can present a valid
+query string. Potentially that could be any user that has ever used
+the application.
 
 
 STATUS
