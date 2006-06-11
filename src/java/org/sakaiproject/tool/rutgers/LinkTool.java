@@ -278,8 +278,8 @@ public class LinkTool extends HttpServlet
 
 	    if (url != null && userid != null && siteid != null && rolename != null && sessionid != null) {
 		// command is the thing that will be signed
-		command = "user=" + URLEncoder.encode(userid) + 
-		    "&euid=" + URLEncoder.encode(euid) + 
+		command = "user=" + URLEncoder.encode(euid) + 
+		    "&internaluser=" + URLEncoder.encode(userid) + 
 		    "&site=" + URLEncoder.encode(siteid) + 
 		    "&role=" + URLEncoder.encode(rolename) +
 		    "&session=" + URLEncoder.encode(sessionid) +
@@ -435,7 +435,7 @@ public class LinkTool extends HttpServlet
 		out.println("<p>As a privileged user, you can request an object that will generate a session logged in as any user. For applications that just deal with a single site, and which need site owner privileges, you should ask for an object in the name of the site owner. For applications that need to create site or users, or deal with many sites, you should ask for an object in the name of a user with administrative privileges. If you generate an object in the name of an administrator, please be careful only to put it in sites whose security you trust.<p>You can also request a second kind of object. This one will generate a session for the current user. That is, when an end user accesses an application, this will return a session for that end user. Please be careful about what sites you put this in, because it will allow the owner of the site to compromise the privacy of any user using the site.");
 
 		out.println("<form method='post' action='" + oururl + "?SignForm'>");
-		out.println("Specific user: <input type=text name=user size=30><br>");
+		out.println("Specific user: <input type=text name=user size=30> [an internal Sakai user, not the Enterprise ID]<br>");
 		out.println("The current user: <input type=checkbox name=current value=yes><br>");
 		out.println("<input type=submit value='Generate Signed Object'>");
 		out.println("</form>");

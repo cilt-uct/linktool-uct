@@ -156,52 +156,81 @@ public class SakaiSigning {
 	if (!result)
           throw new AxisFault("failed on session object");
 
-	if (object.equals("currentuser") && data != null && data.substring(0,5).equals("user=")) {
-	   return makesession(data);
-	} else if (object.substring(0, 5).equals("user=")) {
-	   return makesession(object);
-	} else
-	  throw new AxisFault("invalid session object");
+	if (object.equals("currentuser") && data != null)
+	   return makesession(data, "internaluser=");
+	else 
+	   return makesession(object, "user=");
 
     }
 
-    private String makesession(String spec) throws AxisFault {
+    private String makesession(String spec, String attr) throws AxisFault {
 	
-           String user = spec.substring(5);
-	   int i;
+	int i;
+	if (!spec.startsWith(attr)) {
+	    i = spec.indexOf("&"+ attr);
+	    if (i > 0)
+		spec = spec.substring(i+1);
+	    else
+		throw new AxisFault("unabled to find "+attr);
+	}
+	i = spec.indexOf("&");
+	if (i > 0)
+	    spec = spec.substring(0, i);
+	i = spec.indexOf("=");
+	// has to be there
+	spec = spec.substring(i+1);
+	    
+	User user = null;
+	try{
+	    user = UserDirectoryService.getUser(spec);
+	} catch (Exception e) {
+	    throw new AxisFault(e.getClass().getName() + " : " + e.getMessage());
+	}
 
-	   i = user.indexOf("&");
-	   if (i > 0)
-	     user = user.substring(0, i);
+	Session s = SessionManager.startSession();
+	if (s == null)
+	    throw new AxisFault("Unable to establish session");
 
-	   Session s = SessionManager.startSession();
-	   if (s == null)
-	       throw new AxisFault("Unable to establish session");
+	//	   System.out.println("creating session for " + user);
+	s.setUserId(user.getId());
+	s.setUserEid(user.getEid());
 
-//	   System.out.println("creating session for " + user);
-	   s.setUserId(user);
-	   s.setUserEid(user);
-
-	   return s.getId();
+	return s.getId();
     }
 
-    public String touchsession(String esession) throws AxisFault {
+    public String touchsession(String esessions) throws AxisFault {
 
 // no security; you can't do anything damaging with this
 // you just prevent a session from timing out
 
-	Session s = null;
-	String sessionid = decrypt(esession);
+	int i;
+	String esession;
 
-	if (sessionid != null)
-	  s = SessionManager.getSession(sessionid);
+	while (esessions != null) {
+	    i = esessions.indexOf(",");
+	    if (i > 0) {
+		esession = esessions.substring(0, i);
+		esessions = esessions.substring(i+1);
+	    } else {
+		esession = esessions;
+		esessions = null;
+	    }
+	    esession = esession.trim();
+
+	    Session s = null;
+	    String sessionid = decrypt(esession);
+
+	    System.out.println("session " + sessionid);
+
+	    if (sessionid != null)
+		s = SessionManager.getSession(sessionid);
 	
-	if (s == null)
-	{
+	    if (s == null)
 		throw new AxisFault("Session "+esession+" is not active");
+
+	    s.setActive();
 	}
 
-	s.setActive();
 	return "success";
     }
 
@@ -218,7 +247,7 @@ public class SakaiSigning {
           // Decode using utf-8
           return new String(utf8, "UTF8");
         } catch (Exception ignore) {
-          System.out.println("SakaiSigning unable to use blowfish");
+          System.out.println("SakaiSigning decrypt failed");
         }
 	return null;
     }

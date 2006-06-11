@@ -30,8 +30,8 @@ var _editor_url = "/library/htmlarea/"
 
   // to avoid cross-site scripting problems, arguments should be passed
   // through strip_tags unless you're sure you know what you're doing
-  $user = strip_tags($_GET['user']);
-  $euid = strip_tags($_GET['euid']);
+  $user = strip_tags($_GET['internaluser']);
+  $euid = strip_tags($_GET['user']);
   $site = strip_tags($_GET['site']);
   $server = strip_tags($_GET['serverurl']);
   $sessionid = strip_tags($_GET['session']);
@@ -74,12 +74,12 @@ var _editor_url = "/library/htmlarea/"
   print "<p>Can $user update $site? $allow";
 
   // get basic info on user. result is XML
-  $userinfo = $infoProxy->getUserInfo($session, $user);
+  $userinfo = $infoProxy->getInternalUserInfo($session, $user);
   $userinfo = str_replace("<", "&lt;", $userinfo);
   print "<p>Info on $user:<pre>$userinfo</pre>";
 
   // get basic info on user. result is XML
-  $userinfo = $infoProxy->getEidInfo($session, $euid);
+  $userinfo = $infoProxy->getUserInfo($session, $euid);
   $userinfo = str_replace("<", "&lt;", $userinfo);
   print "<p>Info on $euid:<pre>$userinfo</pre>";
 

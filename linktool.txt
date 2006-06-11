@@ -78,15 +78,24 @@ Linktool first derives some key information, which we believe all
 applications are likely to need. It calls the URL you have
 defined, with the following arguments:
 
-  user - this is the Sakai username. It comes from the session. If you
+  user - this is username. In fact, it is what Sakai calls the
+"Enterprise ID." That is that user-visible version of the username.
+There is also an internal version of the username, which is often an
+unique generated object. Most applications won't want to use
+it. However if a user changes their username, "user" will change,
+while that internal name will not. When moving from versions older
+than 2.2 to version 2.2 of Sakai, existing users will have an internal
+name that is the same as their enterprise ID. However new users will
+get a unique, generated internal name.
+   The user information comes from the session.  If you
 are using Linktool as a tool, Sakai will obviously know the current
 username. If you are calling it as a URL, Sakai will look at your
 Sakai session cookie, and pull the username out of the session.
 Obviously this will only work if the current browser has already
 logged into sakai. 
 
-  euid - the enterprise username. This is what most people think
-of as the username. user is an internal Sakai identifier
+  internaluser - this is the generated username mentioned above.
+In the implementation for Sakai 2.1 this is always the same as user.
 
   site - If you are using Linktool as a tool, this is the user's
 current site, which is the site in which Linktool is installed. If you
@@ -101,6 +110,9 @@ this. In principle a user could create a site with non-standard role
 names. If you're dealing with grading or other functions like that
 it's probably safer to use isUserAbleToGradeStudent from SakaiGradebook.jws
 to check permission.
+
+  session - This is an encrypted version of the session ID for the
+current session. See below for how it is used.
 
   serverurl - This is the url to call back to the server. To be
 secure, this must be SSL, and your software must check the certificate.
@@ -153,6 +165,32 @@ installation adds an executable program called "pear" to /usr/bin or
 extensions. E.g. to install SOAP, you type "pear install SOAP". That
 fetches SOAP over the network and installs it. See
 http://pear.php.net/package/SOAP.
+
+NOTE: sessions in sakai timout after about 30 min of inactivity.
+If a user goes to an external application, and that application does
+its own session management, sakai will not know there's any
+activity going on. Thus after 30 min, the sakai session will time
+out. If this is not desirable, you can periodically call
+touchsession:
+
+  $sessionid = strip_tags($_GET['session']);
+
+  $result=$myProxy->touchsession($sessionid);
+  if ($result != "success")
+    ....
+
+Session is passed to your application in the initial call. It is 
+an encrypted version of a Sakai session id. touchsession will
+make sakai reset the inactivity timer. Note that you can pass
+touchsession a list of encrypted session ID's, separated by commas.
+That will allow a large-scale application to update multiple
+sessions at once, thus improving efficency.
+
+You may wonder why we pass an encrypted session ID. The problem
+is that with a user's session ID, you can find out various
+academic information. For FERPA reasons, we don't want to allow
+untrusted applications to do that.
+
 
 CODING STANDARDS
 
