@@ -42,9 +42,12 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.Properties;
+import java.util.regex.Pattern;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -113,6 +116,9 @@ public class LinkTool extends HttpServlet
         private static final String privkeyname = "sakai.rutgers.linktool.privkey";
         private static final String saltname = "sakai.rutgers.linktool.salt";
 
+        private Set illegalParams;
+        private Pattern legalKeys;
+
 	/**
 	 * Access the Servlet's information display.
 	 * 
@@ -166,6 +172,19 @@ public class LinkTool extends HttpServlet
 		    ourUrl = "http://127.0.0.1:8080";
 
 		// System.out.println("linktool url " + ourUrl);
+
+                illegalParams = new HashSet();
+		illegalParams.add("user");
+		illegalParams.add("internaluser");
+		illegalParams.add("site");
+		illegalParams.add("role");
+		illegalParams.add("session");
+		illegalParams.add("serverurl");
+		illegalParams.add("url");
+		illegalParams.add("time");
+		illegalParams.add("sign");
+
+		legalKeys = Pattern.compile("^[a-zA-Z0-9]+$");
 
 		M_log.info("init()");
 	}
@@ -285,6 +304,28 @@ public class LinkTool extends HttpServlet
 		    "&session=" + URLEncoder.encode(sessionid) +
 		    "&serverurl=" + URLEncoder.encode(ourUrl) +
 		    "&time=" + System.currentTimeMillis();
+
+		// pass on any other arguments from the user.
+		// but sanitize them to prevent people from trying to
+		// fake out the parameters we pass, or using odd syntax
+		// whose effect I can't predict
+		Map params = req.getParameterMap();
+		Set entries = params.entrySet();
+		Iterator pIter = entries.iterator();
+		while (pIter.hasNext()) {
+		    Map.Entry entry = (Map.Entry)pIter.next();
+		    String key = "";
+		    String value = "";
+		    try {
+			key = (String)entry.getKey();
+			value = ((String [])entry.getValue())[0];
+		    } catch (Exception ignore) {}
+		    if (!illegalParams.contains(key.toLowerCase()) &&
+			legalKeys.matcher(key).matches())
+			command = command + "&" + key + "=" +
+			    URLEncoder.encode(value);
+		}
+
 		try {
 		    // System.out.println("sign >" + command + "<");
 		    signature = sign(command);
