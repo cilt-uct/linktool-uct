@@ -57,25 +57,27 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.sakaiproject.api.kernel.session.Session;
-import org.sakaiproject.api.kernel.session.ToolSession;
-import org.sakaiproject.api.kernel.session.cover.SessionManager;
-import org.sakaiproject.api.kernel.tool.ActiveTool;
-import org.sakaiproject.api.kernel.tool.Placement;
-import org.sakaiproject.api.kernel.tool.Tool;
-import org.sakaiproject.api.kernel.tool.cover.ActiveToolManager;
-import org.sakaiproject.api.kernel.tool.cover.ToolManager;
-import org.sakaiproject.util.web.Web;
+import org.sakaiproject.tool.api.Session;
+import org.sakaiproject.tool.cover.SessionManager;
+import org.sakaiproject.tool.cover.ToolManager;
+import org.sakaiproject.tool.api.Placement;
+import org.sakaiproject.util.Web;
+import org.sakaiproject.component.cover.ServerConfigurationService;
 
-import org.sakaiproject.service.legacy.site.cover.SiteService;
-import org.sakaiproject.service.legacy.site.Site;
-import org.sakaiproject.service.legacy.site.SitePage;
-import org.sakaiproject.service.legacy.site.ToolConfiguration;
-import org.sakaiproject.service.legacy.authzGroup.cover.AuthzGroupService;
-import org.sakaiproject.service.legacy.authzGroup.AuthzGroup;
-import org.sakaiproject.service.legacy.authzGroup.Role;
-import org.sakaiproject.service.legacy.security.cover.SecurityService;
-import org.sakaiproject.service.framework.config.cover.ServerConfigurationService;
+import org.sakaiproject.site.cover.SiteService;
+import org.sakaiproject.site.api.Site;
+import org.sakaiproject.site.api.SitePage;
+
+import org.sakaiproject.site.api.ToolConfiguration;
+
+import org.sakaiproject.authz.cover.AuthzGroupService;
+import org.sakaiproject.authz.api.AuthzGroup;
+import org.sakaiproject.authz.api.Role;
+
+import org.sakaiproject.authz.cover.SecurityService;
+
+import org.sakaiproject.exception.IdUsedException;
+import org.sakaiproject.exception.PermissionException;
 
 /**
  * <p>
@@ -249,8 +251,7 @@ public class LinkTool extends HttpServlet
 	    if (s != null) {
 		// System.out.println("got session " + s.getId());
 		userid = s.getUserId();
-		// safest to use Id in 2.1
-		euid = s.getUserId();
+		euid = s.getUserEid();
 		sessionid = s.getId();
 	    }
 
