@@ -9,8 +9,6 @@
 
 		<configuration name="url" value="https://rulink.rutgers.edu/testlink.php" />
 		<configuration name="height" value="600px" />
-                <category name="course" />
-                <category name="project" />
 
 		<keyword name="linktool" />
 
