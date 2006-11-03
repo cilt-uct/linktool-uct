@@ -224,6 +224,8 @@ public class LinkTool extends HttpServlet
 	    if (placement != null)
    	      config = placement.getConfig();
 	    PrintWriter out = res.getWriter();
+		 res.setContentType("text/html");
+		 
 	    String userid = null;
 	    String euid = null;
 	    String siteid = null;
