@@ -234,7 +234,7 @@ public class SakaiSigning {
 	return "success";
     }
 
-    public String decryptsession(String esession) throws AxisFault 
+    public String decryptSession(String esession) throws AxisFault 
     {
        return decrypt(esession.trim());
     }
