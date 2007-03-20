@@ -234,6 +234,11 @@ public class SakaiSigning {
 	return "success";
     }
 
+    public String decryptsession(String esession) throws AxisFault 
+    {
+       return decrypt(esession.trim());
+    }
+
     private static String decrypt (String enc) {
 	if (privateKey == null)
 	   privateKey = readSecretKey("privkey", "Blowfish");
