@@ -6,16 +6,19 @@ There are two modes: install as tool, and call via URL
 
 SETUP
 
-The first time you deploy this, two keys will be placed in the sakai
-configuration directory (e.g. /usr/local/tomcat/sakai). In clustered
-configurations you will want to use the same key and salt on all systems, 
-and specify set a shared location which all app servers can read using 
-the sakai.properties setting linktool.home, e.g.
+The first time you deploy this, two keys will be placed in the Linktool
+configuration directory. This defaults to the Sakai home directory inside
+tomcat (e.g. /usr/local/tomcat/sakai), as returned by 
+ServerConfigurationService.getSakaiHomePath(). 
+
+In clustered configurations, you will want to use the same key and salt on 
+all systems. To do this, specify a shared location which all app servers 
+can read (and the first app server to run Linktool can write to) using the 
+sakai.properties setting linktool.home, e.g.
 
 linktool.home=/data/sakai/config/
 
-If no directory is defined, they are put in /etc. The file names are
-sakai.rutgers.linktool.privkey and sakai.rutgers.linktool.salt. 
+The file names are sakai.rutgers.linktool.privkey and sakai.rutgers.linktool.salt. 
 The session authorization objects are signed with this key, and they 
 should work on all systems. If you somehow lose these keys, new ones 
 will be generated. This will invalidate all existing session authorization 
