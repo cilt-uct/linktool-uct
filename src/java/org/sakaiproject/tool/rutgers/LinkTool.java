@@ -417,7 +417,8 @@ public class LinkTool extends HttpServlet
 		bodyonload = "setFrameHeight('" + element + "');";
 
 	    out.println(headHtml + headHtml1 + (height+30) + "px" + headHtml2 + bodyonload + headHtml3);
-	    out.println("<div><div style='color:#000;text-align:center;font-size:.9em;padding-bottom:5px;line-height:1.3em;background:#DDDDDD;height:22px;overflow:hidden'><a href='" + oururl + "?Setup' style='border-bottom:1px dashed #999999;color:black;text-decoration:none;font:80% Verdana,Arial,Helvetica,sans-serif'>Setup</a></div></div><iframe src='" + url + "' height='" + height + "px' width='100%' frameborder='0' marginwidth='0' marginheight='0'></iframe>");
+	    out.println("<div class=\"portletBody\"><div class=\"navIntraTool\"><a href='" + oururl + "?Setup'>Setup</a></div></div>");
+	    out.println("<iframe src='" + url + "' height='" + height + "px' width='100%' frameborder='0' marginwidth='0' marginheight='0'></iframe>");
 
 	    out.println(tailHtml);
 
@@ -457,15 +458,15 @@ public class LinkTool extends HttpServlet
 	    //	    out.println("<h2>Setup page</h2>");
 	    out.println("<div class='portletBody'><h2>Setup</h2>");
 	    out.println("<form method='post' action='" + oururl + "?SetupForm'>");
-	    out.println("URL: <input type=text name=url size=70 value='" +
-			config.getProperty("url") + "'><br>");
-	    out.println("Height: <input type=text name=height value='" +
-			config.getProperty("height") + "'><br>");
+	    out.println("URL: <input type=\"text\" name=\"url\" size=\"70\" value=\"" +
+			config.getProperty("url") + "\"/><br/>");
+	    out.println("Height: <input type=\"text\" name=\"height\" value=\"" +
+			config.getProperty("height") + "\"/><br/>");
 	    if (placement != null)
 		out.println("Page title: <input type=text name=title><br>");
 	    out.println("<input type=submit value='Update Configuration'>");
 	    out.println("</form>");
-	    out.println("<p>NOTE: setting the Page title changes the title for the entire page (i.e. what is in the left margin). If there is more than one tool on the page, this may not be what you want to do. Admittedly, having more than one tool on the page is fairly rare.");
+	    out.println("<p>NOTE: setting the Page title changes the title for the entire page (i.e. what is in the left margin). If there is more than one tool on the page, this may not be what you want to do. Admittedly, having more than one tool on the page is fairly rare.</p>");
 
 	    out.println("<h3>Session Access</h3>");
 	    out.println("<p> This section allows you to request a cryptographically signed object that can be used to request access to a Sakai session ID. Session IDs are needed to access most of the web services. ");
@@ -488,16 +489,16 @@ public class LinkTool extends HttpServlet
 	    } else {
 		out.println("<p>As a privileged user, you can request an object that will generate a session logged in as any user. For applications that just deal with a single site, and which need site owner privileges, you should ask for an object in the name of the site owner. For applications that need to create site or users, or deal with many sites, you should ask for an object in the name of a user with administrative privileges. If you generate an object in the name of an administrator, please be careful only to put it in sites whose security you trust.<p>You can also request a second kind of object. This one will generate a session for the current user. That is, when an end user accesses an application, this will return a session for that end user. Please be careful about what sites you put this in, because it will allow the owner of the site to compromise the privacy of any user using the site.");
 
-		out.println("<form method='post' action='" + oururl + "?SignForm'>");
-		out.println("Specific user: <input type=text name=user size=30> [an internal Sakai user, not the Enterprise ID]<br>");
-		out.println("The current user: <input type=checkbox name=current value=yes><br>");
-		out.println("<input type=submit value='Generate Signed Object'>");
+		out.println("<form method=\"post\" action=\"" + oururl + "?SignForm\">");
+		out.println("Specific user: <input type=\"text\" name=\"user\" size=\"30\"/> [an internal Sakai user, not the Enterprise ID]<br>");
+		out.println("The current user: <input type=\"checkbox\" name=\"current\" value=\"yes\"/><br/>");
+		out.println("<input type=\"submit\" value=\"Generate Signed Object\"/>");
 		out.println("</form>");
 	    }
 
 	    //	    if (SecurityService.getInstance().isSuperUser())
 
-	    out.println("<h3>Exit</h3><p><form action='" + oururl + "?panel=Main' method='get'><input type=submit value='Exit Setup'></form>");
+	    out.println("<h3>Exit</h3><p><form action=\"" + oururl + "?panel=Main\" method=\"get\"><input type=\"submit\" value=\"Exit Setup\"/></form>");
 	    out.println("</div>");
 
 	    out.println(tailHtml);
@@ -529,10 +530,11 @@ public class LinkTool extends HttpServlet
 	    out.println(stylesHtml);
 	    out.println(headHtml1 + "300px" + headHtml2 + bodyonload + headHtml3);
 
-	    out.println("<div class='portletBody'><h2>Error</h2>");
-	    out.println("<p>" + error);
+	    out.println("<div class=\"portletBody\"><h3>Error</h3>");
+	    
+	    out.println("<div class=\"alertMessage\">" + error + "</div>");
 
-	    out.println("<p><a href='" + oururl + "?panel=Main'>Return to tool</a>");
+	    out.println("<p><a href='" + oururl + "?panel=Main'>Return to tool</a></p>");
 	    out.println("</div>");
 
 	    out.println(tailHtml);
