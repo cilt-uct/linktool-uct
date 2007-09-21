@@ -139,9 +139,13 @@ public class LinkTool extends HttpServlet
 	public void init(ServletConfig config) throws ServletException
 	{
 		super.init(config);
-		homedir = ServerConfigurationService.getSakaiHomePath();
+		homedir = ServerConfigurationService.getString("linktool.home", ServerConfigurationService.getSakaiHomePath());
 		if (homedir == null)
 		    homedir = "/etc/";
+        if (!homedir.endsWith("/"))
+        {
+                homedir = homedir + "/";
+        }
 
 		//		System.out.println("canread " + homedir + pubkeyname + (new File(homedir + pubkeyname)).canRead());
 		//		System.out.println("canread " + homedir + privkeyname + (new File(homedir + privkeyname)).canRead());
