@@ -26,22 +26,12 @@ package org.sakaiproject.tool.rutgers;
 import java.io.*;
 
 import java.security.*;
-import java.security.spec.*;
-import java.security.interfaces.*;
 
 import javax.crypto.*;
 import javax.crypto.spec.*;
-import javax.crypto.interfaces.*;
 
-import java.math.BigInteger;
-
-import java.net.URL;
 import java.net.URLEncoder;
-import java.text.DateFormat;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.HashMap;
+
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -76,9 +66,6 @@ import org.sakaiproject.authz.api.Role;
 
 import org.sakaiproject.authz.cover.SecurityService;
 
-import org.sakaiproject.exception.IdUsedException;
-import org.sakaiproject.exception.PermissionException;
-
 /**
  * <p>
  * Sakai browser sample tool.
@@ -89,35 +76,32 @@ import org.sakaiproject.exception.PermissionException;
  */
 public class LinkTool extends HttpServlet
 {
-    	private static final String headHtml = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> 		<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\" xml:lang=\"en\">   <head>     <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />     <meta http-equiv=\"Content-Style-Type\" content=\"text/css\" />  <title>Link Tool</title>";
+    private static final String headHtml = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\" xml:lang=\"en\">\n<head><title>Link Tool</title>";
 
-        private static final String headHtml1 = "<script type=\"text/javascript\" language=\"JavaScript\"> 		var _editor_url = \"/library/htmlarea/\"; function setFrameHeight(id) { var frame = parent.document.getElementById(id); if (frame) {                var objToResize = (frame.style) ? frame.style : frame; objToResize.height = \""; 
-
-    	private static final String headHtml2 = "\";  }} </script> 		<script type=\"text/javascript\" language=\"JavaScript\" src=\"/library/htmlarea/htmlarea.js\"> 		</script> 		  </head><body onload=\"";
+    private static final String headHtml1 = "<script type=\"text/javascript\" language=\"JavaScript\">function setFrameHeight(id) { var frame = parent.document.getElementById(id); if (frame) {                var objToResize = (frame.style) ? frame.style : frame; objToResize.height = \""; 
+    	
+    private static final String headHtml2 = "\";  }} </script></head>\n<body onload=\"";
 
 	private static final String headHtml3 = "\" style='margin:0;padding:0;'>";
 
 	private static final String tailHtml = "</body></html>";
 
-        private static final String stylesHtml = "<link href='/library/skin/tool_base.css' type='text/css' rel='stylesheet' media='all' /><link href='/library/skin/default/tool.css' type='text/css' rel='stylesheet' media='all' /><script type='text/javascript' language='JavaScript' src='/library/js/headscripts.js'></script>";
-
-
 	/** Our log (commons). */
 	private static Log M_log = LogFactory.getLog(LinkTool.class);
 
-        private static String homedir = null;
-        private static SecretKey secretKey = null;
-        private static SecretKey salt = null;
-        private static String ourUrl = null;
+    private static String homedir = null;
+    private static SecretKey secretKey = null;
+    private static SecretKey salt = null;
+    private static String ourUrl = null;
 
 	/** Helper tool for options. */
 	private static final String OPTIONS_HELPER = "sakai.tool_config.helper";
 
-        private static final String privkeyname = "sakai.rutgers.linktool.privkey";
-        private static final String saltname = "sakai.rutgers.linktool.salt";
+    private static final String privkeyname = "sakai.rutgers.linktool.privkey";
+    private static final String saltname = "sakai.rutgers.linktool.salt";
 
-        private Set illegalParams;
-        private Pattern legalKeys;
+    private Set illegalParams;
+    private Pattern legalKeys;
 
 	/**
 	 * Access the Servlet's information display.
@@ -234,7 +218,7 @@ public class LinkTool extends HttpServlet
 	    }
 	    
 	    PrintWriter out = res.getWriter();
-		res.setContentType("text/html");
+		res.setContentType("text/html;charset=UTF-8");
 		 
 	    String userid = null;
 	    String euid = null;
@@ -342,8 +326,8 @@ public class LinkTool extends HttpServlet
 		try {
 		    // System.out.println("sign >" + command + "<");
 		    signature = sign(command);
-		    url = url + "?" + command + "&sign=" + signature + "';";
-		    bodyonload.append("window.location = '" + url);
+		    url = url + "?" + command + "&sign=" + signature;
+		    bodyonload.append("window.location = '" + url + "';");
 		} catch (Exception e) {};
 	    }
 
@@ -367,7 +351,7 @@ public class LinkTool extends HttpServlet
 	    //	    else
 	    //		System.out.println("no query");
 	    if (query != null && query.equals("Setup")) {
-		if (writeSetupPage(out, placement, element, config, oururl))
+		if (writeSetupPage(req, out, placement, element, config, oururl))
 		    return;
 	    }
 
@@ -376,7 +360,7 @@ public class LinkTool extends HttpServlet
 	    // in non-tool mode, there's no config to update
 	    if (placement != null && config != null &&
 		SiteService.allowUpdateSite(siteid)) {
-		if (writeOwnerPage(out, height, url, element, oururl))
+		if (writeOwnerPage(req, out, height, url, element, oururl))
 		    return;
 	    }
 
@@ -406,19 +390,21 @@ public class LinkTool extends HttpServlet
 	 *        URL for this application
 	 */
 
-	private boolean writeOwnerPage(PrintWriter out, int height, String url, String element, String oururl) {
+	private boolean writeOwnerPage(HttpServletRequest req, PrintWriter out, int height, String url, String element, String oururl) {
 
 	    String bodyonload = "";
 
+	    String sakaiHead = (String) req.getAttribute("sakai.html.head");
+	    
 	    if (url == null)
 		return false;
 
 	    if (element != null)
 		bodyonload = "setFrameHeight('" + element + "');";
 
-	    out.println(headHtml + headHtml1 + (height+30) + "px" + headHtml2 + bodyonload + headHtml3);
+	    out.println(headHtml + sakaiHead + headHtml1 + (height+50) + "px" + headHtml2 + bodyonload + headHtml3);
 	    out.println("<div class=\"portletBody\"><div class=\"navIntraTool\"><a href='" + oururl + "?Setup'>Setup</a></div></div>");
-	    out.println("<iframe src='" + url + "' height='" + height + "px' width='100%' frameborder='0' marginwidth='0' marginheight='0'></iframe>");
+	    out.println("<iframe src=\"" + url + "\" height=\"" + height + "px\" width=\"100%\" frameborder=\"0\" marginwidth=\"0\" marginheight=\"0\" />");
 
 	    out.println(tailHtml);
 
@@ -442,8 +428,10 @@ public class LinkTool extends HttpServlet
 	 *        URL for this application
 	 */
 
-	private boolean writeSetupPage(PrintWriter out, Placement placement, String element, Properties config, String oururl) {
+	private boolean writeSetupPage(HttpServletRequest req, PrintWriter out, Placement placement, String element, Properties config, String oururl) {
 	    String bodyonload = "";
+
+	    String sakaiHead = (String) req.getAttribute("sakai.html.head");
 
 	    // if not in tool mode, nothing to do
 	    if (placement == null || config == null)
@@ -453,23 +441,27 @@ public class LinkTool extends HttpServlet
 		bodyonload = "setMainFrameHeight('" + element + "');setFocus(focus_path);";
 
 	    out.println(headHtml);
-	    out.println(stylesHtml);
+	    out.println(sakaiHead);
 	    out.println(headHtml1 + "300px" + headHtml2 + bodyonload + headHtml3);
 	    //	    out.println("<h2>Setup page</h2>");
 	    out.println("<div class='portletBody'><h2>Setup</h2>");
 	    out.println("<form method='post' action='" + oururl + "?SetupForm'>");
-	    out.println("URL: <input type=\"text\" name=\"url\" size=\"70\" value=\"" +
-			config.getProperty("url") + "\"/><br/>");
-	    out.println("Height: <input type=\"text\" name=\"height\" value=\"" +
-			config.getProperty("height") + "\"/><br/>");
+	    // <p class="shorttext"><label for="id">Description</label><textarea id="description_0" name="description_0" rows="5" cols="80" wrap="virtual"></textarea></p>
+	    out.println("<p class=\"shorttext\"><label for=\"url\">URL</label><input id=\"url\" type=\"text\" name=\"url\" size=\"70\" value=\"" +
+			config.getProperty("url") + "\"/></p>");
+	    out.println("<p class=\"shorttext\"><label for=\"height\">Height</label><input id=\"height\" type=\"text\" name=\"height\" value=\"" +
+			config.getProperty("height") + "\"/></p>");
 	    if (placement != null)
-		out.println("Page title: <input type=text name=title><br>");
-	    out.println("<input type=submit value='Update Configuration'>");
+	    	out.println("<p class=\"shorttext\"><label for=\"pagetitle\">Page title</label><input id=\"pagetitle\" type=\"text\" name=\"title\" value=\"" +
+	    			placement.getTitle() + "\"/></p>");
+	    out.println("<p class=\"act\"><input type=\"submit\" value=\"Update Configuration\"/></p>");
 	    out.println("</form>");
-	    out.println("<p>NOTE: setting the Page title changes the title for the entire page (i.e. what is in the left margin). If there is more than one tool on the page, this may not be what you want to do. Admittedly, having more than one tool on the page is fairly rare.</p>");
-
+	    out.println("<span style=\"display: block;\" class=\"instruction\">");
+	    out.println("Setting the Page title changes the title for the entire page (i.e. what is in the left margin). If there is more than one tool on the page, this may not be what you want to do.");
+	    out.println("</span>");
 	    out.println("<h3>Session Access</h3>");
-	    out.println("<p> This section allows you to request a cryptographically signed object that can be used to request access to a Sakai session ID. Session IDs are needed to access most of the web services. ");
+	    out.println("<div class=\"instruction\">");
+	    out.println("<p>This section allows you to request a cryptographically signed object that can be used to request access to a Sakai session ID. Session IDs are needed to access most of the web services.</p>");
 
 	    // Session s = SessionManager.getCurrentSession();
 	    //	    String userid = null;
@@ -481,24 +473,26 @@ public class LinkTool extends HttpServlet
 	    boolean isprived = SecurityService.getInstance().isSuperUser();
 	    //	    System.out.println("user " + userid + "prived " + isprived);
 	    if (!isprived) {
-		out.println("<p>You can request an object that will generate a session logged with your userid. For applications that deal with sites that you own, such an object should be sufficient for most purposes.");
-		out.println("<p>For applications that need to create site or users, or deal with many sites, an administrator can generate objects with more privileges");
-		out.println("<form method='post' action='" + oururl + "?SignForm'>");
-		out.println("<input type=submit value='Generate Signed Object'>");
-		out.println("</form>");
+	    	out.println("<p>You can request an object that will generate a session logged with your userid. For applications that deal with sites that you own, such an object should be sufficient for most purposes.");
+	    	out.println("<p>For applications that need to create site or users, or deal with many sites, an administrator can generate objects with more privileges.</p>");
+	    	out.println("</div>");
+	    	out.println("<form method='post' action='" + oururl + "?SignForm'>");
+	    	out.println("<p class=\"act\"><input type=submit value='Generate Signed Object'></p");
+	    	out.println("</form>");
 	    } else {
-		out.println("<p>As a privileged user, you can request an object that will generate a session logged in as any user. For applications that just deal with a single site, and which need site owner privileges, you should ask for an object in the name of the site owner. For applications that need to create site or users, or deal with many sites, you should ask for an object in the name of a user with administrative privileges. If you generate an object in the name of an administrator, please be careful only to put it in sites whose security you trust.<p>You can also request a second kind of object. This one will generate a session for the current user. That is, when an end user accesses an application, this will return a session for that end user. Please be careful about what sites you put this in, because it will allow the owner of the site to compromise the privacy of any user using the site.");
+	    	out.println("<p>As a privileged user, you can request an object that will generate a session logged in as any user. For applications that just deal with a single site, and which need site owner privileges, you should ask for an object in the name of the site owner. For applications that need to create site or users, or deal with many sites, you should ask for an object in the name of a user with administrative privileges. If you generate an object in the name of an administrator, please be careful only to put it in sites whose security you trust.</p><p>You can also request a second kind of object. This one will generate a session for the current user. That is, when an end user accesses an application, this will return a session for that end user. Please be careful about what sites you put this in, because it will allow the owner of the site to compromise the privacy of any user using the site.</p>");
 
-		out.println("<form method=\"post\" action=\"" + oururl + "?SignForm\">");
-		out.println("Specific user: <input type=\"text\" name=\"user\" size=\"30\"/> [an internal Sakai user, not the Enterprise ID]<br>");
-		out.println("The current user: <input type=\"checkbox\" name=\"current\" value=\"yes\"/><br/>");
-		out.println("<input type=\"submit\" value=\"Generate Signed Object\"/>");
-		out.println("</form>");
+	    	out.println("</div>");
+	    	out.println("<form method=\"post\" action=\"" + oururl + "?SignForm\">");
+	    	out.println("<p class=\"shorttext\"><label for=\"user\">Specific user</label><input id=\"user\" type=\"text\" name=\"user\" size=\"30\"/> [an internal Sakai userid, not the Enterprise ID]</p>");
+	    	out.println("<p class=\"shorttext\"><label for=\"currentuser\">The current user</label><input id=\"currentuser\" type=\"checkbox\" name=\"current\" value=\"yes\"/></p>");
+	    	out.println("<p class=\"act\"><input type=\"submit\" value=\"Generate Signed Object\"/></p>");
+	    	out.println("</form>");
 	    }
 
 	    //	    if (SecurityService.getInstance().isSuperUser())
 
-	    out.println("<h3>Exit</h3><p><form action=\"" + oururl + "?panel=Main\" method=\"get\"><input type=\"submit\" value=\"Exit Setup\"/></form>");
+	    out.println("<h3>Exit</h3><form action=\"" + oururl + "?panel=Main\" method=\"get\"><p class=\"act\"><input type=\"submit\" value=\"Exit Setup\"/></p></form>");
 	    out.println("</div>");
 
 	    out.println(tailHtml);
@@ -519,22 +513,24 @@ public class LinkTool extends HttpServlet
 	 *        URL for this application
 	 */
 
-	private boolean writeErrorPage(PrintWriter out, String element, String error, String oururl) {
+	private boolean writeErrorPage(HttpServletRequest req, PrintWriter out, String element, String error, String oururl) {
 
 	    String bodyonload = "";
+	    String sakaiHead = (String) req.getAttribute("sakai.html.head");
 
 	    if (element != null)
 		bodyonload = "setMainFrameHeight('" + element + "');setFocus(focus_path);";
-
+	    // "sakai.html.body.onload"
+	    
 	    out.println(headHtml);
-	    out.println(stylesHtml);
+	    out.println(sakaiHead);
 	    out.println(headHtml1 + "300px" + headHtml2 + bodyonload + headHtml3);
 
 	    out.println("<div class=\"portletBody\"><h3>Error</h3>");
 	    
 	    out.println("<div class=\"alertMessage\">" + error + "</div>");
 
-	    out.println("<p><a href='" + oururl + "?panel=Main'>Return to tool</a></p>");
+	    out.println("<p><a href=\"" + oururl + "?panel=Main\">Return to tool</a></p>");
 	    out.println("</div>");
 
 	    out.println(tailHtml);
@@ -566,7 +562,7 @@ public class LinkTool extends HttpServlet
 	    Placement placement = ToolManager.getCurrentPlacement();
 	    Properties config = null;
 	    PrintWriter out = res.getWriter();
-	    res.setContentType("text/html");
+	    res.setContentType("text/html;charset=UTF-8");
 	    
 	    String userid = null;
 	    String siteid = null;
@@ -578,7 +574,7 @@ public class LinkTool extends HttpServlet
 
 	    // must be in tool mode
 	    if (placement == null) {
-		writeErrorPage(out, element, "Unable to find the current tool", oururl);
+		writeErrorPage(req, out, element, "Unable to find the current tool", oururl);
 		return;
 	    }
 
@@ -586,7 +582,7 @@ public class LinkTool extends HttpServlet
 	    // this is safe because we verify that the user has a role in site
 	    siteid = placement.getContext();
 	    if (siteid == null) {
-		writeErrorPage(out, element, "Unable to find the current site", oururl);
+		writeErrorPage(req, out, element, "Unable to find the current site", oururl);
 		return;
 	    }
 
@@ -597,11 +593,11 @@ public class LinkTool extends HttpServlet
 	    }
 
 	    if (userid == null) {
-		writeErrorPage(out, element, "Unable to figure out your userid", oururl);
+		writeErrorPage(req, out, element, "Unable to figure out your userid", oururl);
 		return;
 	    }
 	    if (!SiteService.allowUpdateSite(siteid)) {
-		writeErrorPage(out, element, "You are not allowed to update this site", oururl);
+		writeErrorPage(req, out, element, "You are not allowed to update this site", oururl);
 		return;
 	    }
 
@@ -638,7 +634,7 @@ public class LinkTool extends HttpServlet
 
 	    if (placement != null)
    	      config = placement.getConfig();
-	    writeSetupPage(out, placement, element, config, oururl);
+	    writeSetupPage(req, out, placement, element, config, oururl);
 
 	}
 
@@ -659,7 +655,9 @@ public class LinkTool extends HttpServlet
 	{
 	    Placement placement = ToolManager.getCurrentPlacement();
 	    PrintWriter out = res.getWriter();
-	    res.setContentType("text/html");
+	    res.setContentType("text/html;charset=UTF-8");
+
+	    String sakaiHead = (String) req.getAttribute("sakai.html.head");
 	    
 	    String userid = null;
 	    String element = null;
@@ -672,7 +670,7 @@ public class LinkTool extends HttpServlet
 	    if (placement != null)
 		element = Web.escapeJavascript("Main" + placement.getId( ));
 	    else {
-		writeErrorPage(out, element, "Unable to find the current tool", oururl);
+		writeErrorPage(req, out, element, "Unable to find the current tool", oururl);
 		return;
 	    }
 
@@ -683,7 +681,7 @@ public class LinkTool extends HttpServlet
 	    }
 
 	    if (userid == null) {
-		writeErrorPage(out, element, "Unable to figure out your userid", oururl);
+		writeErrorPage(req, out, element, "Unable to figure out your userid", oururl);
 		return;
 	    }
 
@@ -698,7 +696,7 @@ public class LinkTool extends HttpServlet
 		else if (requser != null & !requser.equals(""))
 		    command = "user=" + requser;
 		else {
-		    writeErrorPage(out, element, "No username supplied", oururl);
+		    writeErrorPage(req, out, element, "No username supplied", oururl);
 		    return;
 		}
 		
@@ -714,14 +712,14 @@ public class LinkTool extends HttpServlet
 	    }
 
 	    if (object == null) {
-		writeErrorPage(out, element, "Attempt to generate signed object failed", oururl);
+		writeErrorPage(req, out, element, "Attempt to generate signed object failed", oururl);
 		return;
 	    }
 
 	    bodyonload = "setMainFrameHeight('" + element + "');setFocus(focus_path);";
 
 	    out.println(headHtml);
-	    out.println(stylesHtml);
+	    out.println(sakaiHead);
 	    out.println(headHtml1 + "300px" + headHtml2 + bodyonload + headHtml3);
 
 	    out.println("<div class='portletBody'><h2>Your object</h2>");
@@ -888,9 +886,7 @@ public class LinkTool extends HttpServlet
 		System.out.println("linktool encrypt no such padding");
 	    } catch (java.io.UnsupportedEncodingException e) {
 		System.out.println("linktool encrypt unsupported encoding");
-	    } catch (java.io.IOException e) {
-		System.out.println("linktool encrypted io exc");
-	    }
+	    } 
 	    return null;
 	}
 
