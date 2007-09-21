@@ -177,7 +177,7 @@ public class LinkTool extends HttpServlet
 
 		// System.out.println("linktool url " + ourUrl);
 
-                illegalParams = new HashSet();
+		illegalParams = new HashSet();
 		illegalParams.add("user");
 		illegalParams.add("internaluser");
 		illegalParams.add("site");
@@ -187,6 +187,7 @@ public class LinkTool extends HttpServlet
 		illegalParams.add("url");
 		illegalParams.add("time");
 		illegalParams.add("sign");
+		illegalParams.add("placement");
 
 		legalKeys = Pattern.compile("^[a-zA-Z0-9]+$");
 
@@ -225,10 +226,15 @@ public class LinkTool extends HttpServlet
 	    // get the Tool
 	    Placement placement = ToolManager.getCurrentPlacement();
 	    Properties config = null;
-	    if (placement != null)
+	    String placementId = "none";
+
+	    if (placement != null) {
    	      config = placement.getConfig();
+   	      placementId = placement.getId();
+	    }
+	    
 	    PrintWriter out = res.getWriter();
-		 res.setContentType("text/html");
+		res.setContentType("text/html");
 		 
 	    String userid = null;
 	    String euid = null;
@@ -309,7 +315,8 @@ public class LinkTool extends HttpServlet
 		    "&role=" + URLEncoder.encode(rolename) +
 		    "&session=" + URLEncoder.encode(sessionid) +
 		    "&serverurl=" + URLEncoder.encode(ourUrl) +
-		    "&time=" + System.currentTimeMillis();
+		    "&time=" + System.currentTimeMillis() +
+		    "&placement=" + URLEncoder.encode(placementId);
 
 		// pass on any other arguments from the user.
 		// but sanitize them to prevent people from trying to
