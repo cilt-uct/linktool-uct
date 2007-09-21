@@ -564,6 +564,8 @@ public class LinkTool extends HttpServlet
 	    Placement placement = ToolManager.getCurrentPlacement();
 	    Properties config = null;
 	    PrintWriter out = res.getWriter();
+	    res.setContentType("text/html");
+	    
 	    String userid = null;
 	    String siteid = null;
 	    String url = null;
@@ -655,6 +657,8 @@ public class LinkTool extends HttpServlet
 	{
 	    Placement placement = ToolManager.getCurrentPlacement();
 	    PrintWriter out = res.getWriter();
+	    res.setContentType("text/html");
+	    
 	    String userid = null;
 	    String element = null;
 	    String command = null;
