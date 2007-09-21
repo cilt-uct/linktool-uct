@@ -7,16 +7,20 @@ There are two modes: install as tool, and call via URL
 SETUP
 
 The first time you deploy this, two keys will be placed in the sakai
-configuration directory (e.g. /usr/local/tomcat/sakai). If that
-directory is not defined, they are put in /etc. The file names are
-sakai.rutgers.linktool.privkey and sakai.rutgers.linktool.salt. In
-multisystem configurations you will want to use the same key and salt
-on all systems. The session authorization objects are signed with this
-key, and they should work on all systems. If you somehow lose these
-keys, new ones will be generated. This will invalidate all existing
-session authorization objects. You may actually want to delete the
-keys and recreate them now and then, to force everyone to reissue all
-of the session authorization objects.
+configuration directory (e.g. /usr/local/tomcat/sakai). In clustered
+configurations you will want to use the same key and salt on all systems, 
+and specify set a shared location which all app servers can read using 
+the sakai.properties setting linktool.home, e.g.
+
+linktool.home=/data/sakai/config/
+
+If no directory is defined, they are put in /etc. The file names are
+sakai.rutgers.linktool.privkey and sakai.rutgers.linktool.salt. 
+The session authorization objects are signed with this key, and they 
+should work on all systems. If you somehow lose these keys, new ones 
+will be generated. This will invalidate all existing session authorization 
+objects. You may actually want to delete the keys and recreate them now 
+and then, to force everyone to reissue all of the session authorization objects.
 
 SakaiSigning.jws should go in .../webapps/sakai-axis. Note that
 you do not need to set webservices.allowlogin. That controls login
