@@ -1,6 +1,6 @@
 /**********************************************************************************
- * $URL: https://source.sakaiproject.org/svn/tags/sakai_2-1-1/sample-tools/browser/src/java/org/sakaiproject/tool/sample/BrowserTool.java $
- * $Id: BrowserTool.java 632 2005-07-14 21:22:50Z janderse@umich.edu $
+ * $URL: $
+ * $Id: $
  **********************************************************************************
  *
  * Copyright (c) 2005 The Regents of the University of Michigan, Trustees of Indiana University,
@@ -68,11 +68,11 @@ import org.sakaiproject.authz.cover.SecurityService;
 
 /**
  * <p>
- * Sakai browser sample tool.
+ * Sakai Link Tool.
  * </p>
  * 
- * @author University of Michigan, Sakai Software Development Team
- * @version $Revision: 632 $
+ * @author Charles Hedrick, Rutgers University.
+ * @version $Revision: $
  */
 public class LinkTool extends HttpServlet
 {
@@ -168,7 +168,6 @@ public class LinkTool extends HttpServlet
 		illegalParams.add("role");
 		illegalParams.add("session");
 		illegalParams.add("serverurl");
-		illegalParams.add("url");
 		illegalParams.add("time");
 		illegalParams.add("sign");
 		illegalParams.add("placement");
@@ -325,8 +324,18 @@ public class LinkTool extends HttpServlet
 
 		try {
 		    // System.out.println("sign >" + command + "<");
-		    signature = sign(command);
-		    url = url + "?" + command + "&sign=" + signature;
+		    
+		    if (url.indexOf('?') < 0) {
+		    	// No additional parameters
+		    	signature = sign(command);
+		    	url = url + "?" + command + "&sign=" + signature;	
+		    }
+		    else {
+		    	// Include additional parameters from the tool mode url in the signature
+		    	String extraparams = url.substring(url.indexOf('?')+1);
+		    	signature = sign(extraparams + "&" + command);
+		    	url = url + "&" + command + "&sign=" + signature;
+		    }
 		    bodyonload.append("window.location = '" + url + "';");
 		} catch (Exception e) {};
 	    }
@@ -403,10 +412,12 @@ public class LinkTool extends HttpServlet
 		bodyonload = "setFrameHeight('" + element + "');";
 
 	    out.println(headHtml + sakaiHead + headHtml1 + (height+50) + "px" + headHtml2 + bodyonload + headHtml3);
-	    out.println("<div class=\"portletBody\"><div class=\"navIntraTool\"><a href='" + oururl + "?Setup'>Setup</a></div></div>");
-	    out.println("<iframe src=\"" + url + "\" height=\"" + height + "px\" width=\"100%\" frameborder=\"0\" marginwidth=\"0\" marginheight=\"0\" />");
-
-	    out.println(tailHtml);
+	    out.println("<div class=\"portletBody\">");
+	    out.println("<div class=\"navIntraTool\"><a href='" + oururl + "?Setup'>Setup</a></div>");
+   	    out.println("<iframe src=\"" + url + "\" height=\"" + height + "px\" " + 
+	    		"width=\"100%\" frameborder=\"0\" marginwidth=\"0\" marginheight=\"0\" scrolling=\"auto\" style=\"padding: 0.15em 0em 0em 0em;\" />");
+   	    out.println("</div>");
+   	    out.println(tailHtml);
 
 	    return true;
 	}
