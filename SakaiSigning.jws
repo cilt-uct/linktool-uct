@@ -1,14 +1,31 @@
-/*
- *   SakaiSigning.jws
+/**********************************************************************************
+ * $URL: $
+ * $Id:  $
+ ***********************************************************************************
  *
- */
- 
+ * Copyright (c) 2006,2007 The Sakai Foundation.
+ * 
+ * Licensed under the Educational Community License, Version 1.0 (the "License"); 
+ * you may not use this file except in compliance with the License. 
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.opensource.org/licenses/ecl1.php
+ * 
+ * Unless required by applicable law or agreed to in writing, software 
+ * distributed under the License is distributed on an "AS IS" BASIS, 
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
+ * See the License for the specific language governing permissions and 
+ * limitations under the License.
+ *
+ **********************************************************************************/
+
 import java.util.Date;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.Collection;
+
 import org.sakaiproject.tool.api.Session;
 import org.sakaiproject.tool.cover.SessionManager;
 
@@ -34,8 +51,6 @@ import org.sakaiproject.site.cover.SiteService;
 
 import org.sakaiproject.authz.cover.SecurityService;
 
-import org.sakaiproject.service.gradebook.shared.GradebookService;
-import org.sakaiproject.service.gradebook.shared.Assignment;
 import org.sakaiproject.component.cover.ServerConfigurationService;
 
 import java.util.Properties;
@@ -43,10 +58,6 @@ import java.util.Calendar;
 import org.apache.axis.AxisFault;
 
 import org.sakaiproject.util.Xml;
-//import org.w3c.dom.Document;
-//import org.w3c.dom.Element;
-//import org.w3c.dom.Node;
-//import org.w3c.dom.NodeList;
 
 import java.io.*;
 
@@ -87,6 +98,9 @@ public class SakaiSigning {
     public String testsign(String data) throws AxisFault {
 //	Session s = establishSession(sessionid);
 
+    if (!"true".equals(ServerConfigurationService.getString("linktool.enabled", "false"))
+    	return "not enabled";
+    	
 	int i = data.indexOf("&time=");
 	int j = data.indexOf("&", i+6);
 	String time = data.substring(i+6,j);
@@ -100,25 +114,24 @@ public class SakaiSigning {
 
     public String verifysign(String data) throws AxisFault {
 
+    if (!"true".equals(ServerConfigurationService.getString("linktool.enabled", "false"))
+    		return "false";
+            	
 	int i = data.lastIndexOf("&");
 	String sign = data.substring(i+6);
 	data = data.substring(0, i);
 
-        boolean result = false;
+	boolean result = false;
 
 	try {
-
         result = verify(data, sign);
 //        System.out.println("Signature Verification Result = " + result);
 
 	} catch (Exception e) {  
 		return e.getClass().getName() + " : " + e.getMessage();
 	}
-	if (result)
- 	 return "true";
-        else
-         return "false";
 
+ 	return result ? "true" : "false";
     }
 
     public String getsession(String object) throws AxisFault {
@@ -128,14 +141,16 @@ public class SakaiSigning {
     public String getsession(String data, String object) throws AxisFault {
 //	Session s = establishSession(sessionid);
 
-        // Check user data
+    if (!"true".equals(ServerConfigurationService.getString("linktool.enabled", "false"))
+        throw new AxisFault("not enabled");
+    	
+    // Check user data
 
-	if (data != null) {
+    if (data != null) {
           String sresult = verifysign(data);
           if (!sresult.equals("true"))
             throw new AxisFault("failed on user data");
-        }
-
+    }
 
 	// Check session object
 
@@ -203,6 +218,9 @@ public class SakaiSigning {
 // no security; you can't do anything damaging with this
 // you just prevent a session from timing out
 
+    if (!"true".equals(ServerConfigurationService.getString("linktool.enabled", "false"))
+    	return "not enabled";
+    	
 	int i;
 	String esession;
 
@@ -236,7 +254,10 @@ public class SakaiSigning {
 
     public String decryptSession(String esession) throws AxisFault 
     {
-       return decrypt(esession.trim());
+        if (!"true".equals(ServerConfigurationService.getString("linktool.enabled", "false"))
+            	return "not enabled";
+            	
+    	return decrypt(esession.trim());
     }
 
     private static String decrypt (String enc) {
@@ -280,8 +301,7 @@ public class SakaiSigning {
     }
 
     private static char[] hexChars = {
-            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd'
-, 'e', 'f'
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
     };
 
     /**
