@@ -168,6 +168,7 @@ public class LinkTool extends HttpServlet
 		illegalParams.add("role");
 		illegalParams.add("session");
 		illegalParams.add("serverurl");
+		illegalParams.add("url");
 		illegalParams.add("time");
 		illegalParams.add("sign");
 		illegalParams.add("placement");
