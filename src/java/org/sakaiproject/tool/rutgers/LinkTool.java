@@ -217,8 +217,8 @@ public class LinkTool extends HttpServlet
    	      placementId = placement.getId();
 	    }
 	    
+		res.setContentType("text/html; charset=utf-8");
 	    PrintWriter out = res.getWriter();
-		res.setContentType("text/html;charset=UTF-8");
 		 
 	    String userid = null;
 	    String euid = null;
@@ -306,6 +306,7 @@ public class LinkTool extends HttpServlet
 		// but sanitize them to prevent people from trying to
 		// fake out the parameters we pass, or using odd syntax
 		// whose effect I can't predict
+		
 		Map params = req.getParameterMap();
 		Set entries = params.entrySet();
 		Iterator pIter = entries.iterator();
@@ -317,28 +318,39 @@ public class LinkTool extends HttpServlet
 			key = (String)entry.getKey();
 			value = ((String [])entry.getValue())[0];
 		    } catch (Exception ignore) {}
-		    if (!illegalParams.contains(key.toLowerCase()) &&
-			legalKeys.matcher(key).matches())
-			command = command + "&" + key + "=" +
-			    URLEncoder.encode(value);
+		    if (!illegalParams.contains(key.toLowerCase()) && legalKeys.matcher(key).matches())
+		    	command = command + "&" + key + "=" + URLEncoder.encode(value);
 		}
 
+		// Pass on additional parameters from the tool mode configured url
+		// (e.g. http://.../somescript?param=value)
+
+	    int param = url.indexOf('?'); 
+		if (param > 0) {
+	    	String extraparams = url.substring(param+1);
+	    	url = url.substring(0, param);
+
+	    	String[] plist = extraparams.split("&");
+	    	for (int i=0; i< plist.length; i++) {
+	    		String[] pval = plist[i].split("=");
+	    		if (pval.length == 2) {
+	    			String key = pval[0];
+	    			String value = pval[1];
+	    	    	if (!illegalParams.contains(key.toLowerCase()) && legalKeys.matcher(key).matches())
+	    	    		command = command + "&" + key + "=" + URLEncoder.encode(value);	    			
+	    		}
+	    	}   	
+
+	    }
+		
 		try {
 		    // System.out.println("sign >" + command + "<");
 		    
-		    if (url.indexOf('?') < 0) {
-		    	// No additional parameters
-		    	signature = sign(command);
-		    	url = url + "?" + command + "&sign=" + signature;	
-		    }
-		    else {
-		    	// Include additional parameters from the tool mode url in the signature
-		    	String extraparams = url.substring(url.indexOf('?')+1);
-		    	signature = sign(extraparams + "&" + command);
-		    	url = url + "&" + command + "&sign=" + signature;
-		    }
-		    bodyonload.append("window.location = '" + url + "';");
+	    	signature = sign(command);
+	    	url = url + "?" + command + "&sign=" + signature;
+		    bodyonload.append("window.location = '" + url.replaceAll("&","&amp;") + "';");
 		} catch (Exception e) {};
+			// TODO
 	    }
 
 	    // now put out a vestigial web page, whose main functional
@@ -415,7 +427,7 @@ public class LinkTool extends HttpServlet
 	    out.println(headHtml + sakaiHead + headHtml1 + (height+50) + "px" + headHtml2 + bodyonload + headHtml3);
 	    out.println("<div class=\"portletBody\">");
 	    out.println("<div class=\"navIntraTool\"><a href='" + oururl + "?Setup'>Setup</a></div>");
-   	    out.println("<iframe src=\"" + url + "\" height=\"" + height + "px\" " + 
+   	    out.println("<iframe src=\"" + url.replaceAll("&","&amp;") + "\" height=\"" + height + "\" " + 
 	    		"width=\"100%\" frameborder=\"0\" marginwidth=\"0\" marginheight=\"0\" scrolling=\"auto\" style=\"padding: 0.15em 0em 0em 0em;\" />");
    	    out.println("</div>");
    	    out.println(tailHtml);
@@ -485,8 +497,8 @@ public class LinkTool extends HttpServlet
 	    boolean isprived = SecurityService.getInstance().isSuperUser();
 	    //	    System.out.println("user " + userid + "prived " + isprived);
 	    if (!isprived) {
-	    	out.println("<p>You can request an object that will generate a session logged with your userid. For applications that deal with sites that you own, such an object should be sufficient for most purposes.");
-	    	out.println("<p>For applications that need to create site or users, or deal with many sites, an administrator can generate objects with more privileges.</p>");
+	    	out.println("<p>You can request an object that will generate a session logged in with your userid. For applications that deal with sites that you own, such an object should be sufficient for most purposes.");
+	    	out.println("<p>For applications that need to create sites or users, or deal with many sites, an administrator can generate objects with more privileges.</p>");
 	    	out.println("</div>");
 	    	out.println("<form method='post' action='" + oururl + "?SignForm'>");
 	    	out.println("<p class=\"act\"><input type=submit value='Generate Signed Object'></p");
@@ -573,8 +585,9 @@ public class LinkTool extends HttpServlet
 
 	    Placement placement = ToolManager.getCurrentPlacement();
 	    Properties config = null;
+
+	    res.setContentType("text/html; charset=utf-8");
 	    PrintWriter out = res.getWriter();
-	    res.setContentType("text/html;charset=UTF-8");
 	    
 	    String userid = null;
 	    String siteid = null;
@@ -666,8 +679,9 @@ public class LinkTool extends HttpServlet
 	private void doSignForm(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
 	{
 	    Placement placement = ToolManager.getCurrentPlacement();
+
+	    res.setContentType("text/html; charset=utf-8");
 	    PrintWriter out = res.getWriter();
-	    res.setContentType("text/html;charset=UTF-8");
 
 	    String sakaiHead = (String) req.getAttribute("sakai.html.head");
 	    
