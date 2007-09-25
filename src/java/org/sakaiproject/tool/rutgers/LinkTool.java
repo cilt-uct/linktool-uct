@@ -154,7 +154,7 @@ public class LinkTool extends HttpServlet
 		ourUrl = ServerConfigurationService.getString("sakai.rutgers.linktool.serverUrl");
 		// System.out.println("linktool url " + ourUrl);
 		if (ourUrl == null || ourUrl.equals(""))
-		    ourUrl = ServerConfigurationService.getString("serverUrl");
+		    ourUrl = ServerConfigurationService.getServerUrl();
 		// System.out.println("linktool url " + ourUrl);
 		if (ourUrl == null || ourUrl.equals(""))
 		    ourUrl = "http://127.0.0.1:8080";
@@ -175,7 +175,7 @@ public class LinkTool extends HttpServlet
 
 		legalKeys = Pattern.compile("^[a-zA-Z0-9]+$");
 
-		M_log.info("init()");
+		M_log.info("init(): home dir: " + homedir);
 	}
 
 	/**
@@ -274,12 +274,16 @@ public class LinkTool extends HttpServlet
 	    String rolename = null;
 
 	    if (siteid != null)
-		realmId = SiteService.siteReference(siteid);
+	    	realmId = SiteService.siteReference(siteid);
+
 	    if (realmId != null) {
-		try {
-		    realm = AuthzGroupService.getAuthzGroup(realmId);
-		} catch (Exception e) {}
+			try {
+			    realm = AuthzGroupService.getAuthzGroup(realmId);
+			} catch (Exception e) {
+				M_log.debug("Exception getting authzgroup for " + realmId, e);
+			}
 	    }
+
 	    if (realm != null && userid != null)
 		r = realm.getUserRole(userid);
 	    if (r != null) {
@@ -292,65 +296,73 @@ public class LinkTool extends HttpServlet
 	    // generate redirect, as url?user=xxx&site=xxx
 
 	    if (url != null && userid != null && siteid != null && rolename != null && sessionid != null) {
-		// command is the thing that will be signed
-		command = "user=" + URLEncoder.encode(euid) + 
-		    "&internaluser=" + URLEncoder.encode(userid) + 
-		    "&site=" + URLEncoder.encode(siteid) + 
-		    "&role=" + URLEncoder.encode(rolename) +
-		    "&session=" + URLEncoder.encode(sessionid) +
-		    "&serverurl=" + URLEncoder.encode(ourUrl) +
-		    "&time=" + System.currentTimeMillis() +
-		    "&placement=" + URLEncoder.encode(placementId);
 
-		// pass on any other arguments from the user.
-		// but sanitize them to prevent people from trying to
-		// fake out the parameters we pass, or using odd syntax
-		// whose effect I can't predict
-		
-		Map params = req.getParameterMap();
-		Set entries = params.entrySet();
-		Iterator pIter = entries.iterator();
-		while (pIter.hasNext()) {
-		    Map.Entry entry = (Map.Entry)pIter.next();
-		    String key = "";
-		    String value = "";
-		    try {
-			key = (String)entry.getKey();
-			value = ((String [])entry.getValue())[0];
-		    } catch (Exception ignore) {}
-		    if (!illegalParams.contains(key.toLowerCase()) && legalKeys.matcher(key).matches())
-		    	command = command + "&" + key + "=" + URLEncoder.encode(value);
-		}
+		    // command is the thing that will be signed
+			command = "user=" + URLEncoder.encode(euid) + 
+			    "&internaluser=" + URLEncoder.encode(userid) + 
+			    "&site=" + URLEncoder.encode(siteid) + 
+			    "&role=" + URLEncoder.encode(rolename) +
+			    "&session=" + URLEncoder.encode(sessionid) +
+			    "&serverurl=" + URLEncoder.encode(ourUrl) +
+			    "&time=" + System.currentTimeMillis() +
+			    "&placement=" + URLEncoder.encode(placementId);
+	
+			// pass on any other arguments from the user.
+			// but sanitize them to prevent people from trying to
+			// fake out the parameters we pass, or using odd syntax
+			// whose effect I can't predict
+			
+			Map params = req.getParameterMap();
+			Set entries = params.entrySet();
+			Iterator pIter = entries.iterator();
+			while (pIter.hasNext()) {
+			    Map.Entry entry = (Map.Entry)pIter.next();
+			    String key = "";
+			    String value = "";
+			    try {
+					key = (String)entry.getKey();
+					value = ((String [])entry.getValue())[0];
+			    } catch (Exception e) { 
+			    	M_log.debug("Exception getting key/value", e);
+			    }
+			    if (!illegalParams.contains(key.toLowerCase()) && legalKeys.matcher(key).matches())
+			    	command = command + "&" + key + "=" + URLEncoder.encode(value);
+			}
+	
+			// Pass on additional parameters from the tool mode configured url
+			// (e.g. http://.../somescript?param=value)
+	
+		    int param = url.indexOf('?'); 
+			if (param > 0) {
+		    	String extraparams = url.substring(param+1);
+		    	url = url.substring(0, param);
+	
+		    	String[] plist = extraparams.split("&");
+		    	for (int i=0; i< plist.length; i++) {
+		    		String[] pval = plist[i].split("=");
+		    		if (pval.length == 2) {
+		    			String key = pval[0];
+		    			String value = pval[1];
+		    	    	if (!illegalParams.contains(key.toLowerCase()) && legalKeys.matcher(key).matches())
+		    	    		command = command + "&" + key + "=" + URLEncoder.encode(value);	    			
+		    		}
+		    	}   	
+	
+		    }
+			
+			try {
+			    // System.out.println("sign >" + command + "<");
+			    
+		    	signature = sign(command);
+		    	url = url + "?" + command + "&sign=" + signature;
+			    bodyonload.append("window.location = '" + url.replaceAll("&","&amp;") + "';");
+			} catch (Exception e) {
+				M_log.debug("Exception signing command", e);
+			};
 
-		// Pass on additional parameters from the tool mode configured url
-		// (e.g. http://.../somescript?param=value)
-
-	    int param = url.indexOf('?'); 
-		if (param > 0) {
-	    	String extraparams = url.substring(param+1);
-	    	url = url.substring(0, param);
-
-	    	String[] plist = extraparams.split("&");
-	    	for (int i=0; i< plist.length; i++) {
-	    		String[] pval = plist[i].split("=");
-	    		if (pval.length == 2) {
-	    			String key = pval[0];
-	    			String value = pval[1];
-	    	    	if (!illegalParams.contains(key.toLowerCase()) && legalKeys.matcher(key).matches())
-	    	    		command = command + "&" + key + "=" + URLEncoder.encode(value);	    			
-	    		}
-	    	}   	
-
-	    }
-		
-		try {
-		    // System.out.println("sign >" + command + "<");
-		    
-	    	signature = sign(command);
-	    	url = url + "?" + command + "&sign=" + signature;
-		    bodyonload.append("window.location = '" + url.replaceAll("&","&amp;") + "';");
-		} catch (Exception e) {};
-			// TODO
+	    } else {
+	    	// Cannot generate a correctly signed URL for some reason, so just encode the URL we have
+	    	url = URLEncoder.encode(url);
 	    }
 
 	    // now put out a vestigial web page, whose main functional
@@ -359,10 +371,10 @@ public class LinkTool extends HttpServlet
 	    int height = 600;
 	    String heights;
 	    if (config != null) {
-		heights =  safetrim(config.getProperty("height", "600"));
-		if (heights.endsWith("px"))
-		    heights = safetrim(heights.substring(0, heights.length()-2));
-		height = Integer.parseInt(heights);
+	    	heights =  safetrim(config.getProperty("height", "600"));
+			if (heights.endsWith("px"))
+			    heights = safetrim(heights.substring(0, heights.length()-2));
+			height = Integer.parseInt(heights);
 	    }
 
 	    // now generate the page
@@ -373,17 +385,16 @@ public class LinkTool extends HttpServlet
 	    //	    else
 	    //		System.out.println("no query");
 	    if (query != null && query.equals("Setup")) {
-		if (writeSetupPage(req, out, placement, element, config, oururl))
-		    return;
+			if (writeSetupPage(req, out, placement, element, config, oururl))
+			    return;
 	    }
 
 	    // If user can update site, add config menu
 	    // placement and config should be defined in tool mode
 	    // in non-tool mode, there's no config to update
-	    if (placement != null && config != null &&
-		SiteService.allowUpdateSite(siteid)) {
-		if (writeOwnerPage(req, out, height, url, element, oururl))
-		    return;
+	    if (placement != null && config != null && SiteService.allowUpdateSite(siteid)) {
+			if (writeOwnerPage(req, out, height, url, element, oururl))
+			    return;
 	    }
 
 	    // default output - show the requested application
@@ -579,8 +590,8 @@ public class LinkTool extends HttpServlet
 	{
 	    String query = req.getQueryString();
 	    if (query.equals("SignForm")) {
-		doSignForm(req, res);
-		return;
+			doSignForm(req, res);
+			return;
 	    }
 
 	    Placement placement = ToolManager.getCurrentPlacement();
@@ -599,31 +610,32 @@ public class LinkTool extends HttpServlet
 
 	    // must be in tool mode
 	    if (placement == null) {
-		writeErrorPage(req, out, element, "Unable to find the current tool", oururl);
-		return;
+			writeErrorPage(req, out, element, "Unable to find the current tool", oururl);
+			return;
 	    }
 
 	    // site is there only for tools, otherwise have to use user's arg
 	    // this is safe because we verify that the user has a role in site
 	    siteid = placement.getContext();
 	    if (siteid == null) {
-		writeErrorPage(req, out, element, "Unable to find the current site", oururl);
-		return;
+			writeErrorPage(req, out, element, "Unable to find the current site", oururl);
+			return;
 	    }
 
 	    Session s = SessionManager.getCurrentSession();
 	    if (s != null) {
-		// System.out.println("got session " + s.getId());
-		userid = s.getUserId();
+			// System.out.println("got session " + s.getId());
+			userid = s.getUserId();
 	    }
 
 	    if (userid == null) {
-		writeErrorPage(req, out, element, "Unable to figure out your userid", oururl);
-		return;
+			writeErrorPage(req, out, element, "Unable to figure out your userid", oururl);
+			return;
 	    }
+
 	    if (!SiteService.allowUpdateSite(siteid)) {
-		writeErrorPage(req, out, element, "You are not allowed to update this site", oururl);
-		return;
+			writeErrorPage(req, out, element, "You are not allowed to update this site", oururl);
+			return;
 	    }
 
 	    ToolConfiguration toolConfig = SiteService.findTool(placement.getId());
@@ -635,30 +647,33 @@ public class LinkTool extends HttpServlet
 
 	    String newtitle = safetrim(req.getParameter("title"));
 	    if (newtitle != null && newtitle.equals(""))
-		newtitle = null;
+	    	newtitle = null;
 
 	    if (newtitle != null) {
 
-		placement.setTitle(safetrim(req.getParameter("title")));
-
-		if (toolConfig != null) {
-		    try {
-			Site site = SiteService.getSite(toolConfig.getSiteId());
-			SitePage page = site.getPage(toolConfig.getPageId());
-			page.setTitle(safetrim(req.getParameter("title")));
-			SiteService.save(site);
-		    } catch (Exception ignore) {}
-		}
-
+			placement.setTitle(safetrim(req.getParameter("title")));
+	
+			if (toolConfig != null) {
+			    try {
+					Site site = SiteService.getSite(toolConfig.getSiteId());
+					SitePage page = site.getPage(toolConfig.getPageId());
+					page.setTitle(safetrim(req.getParameter("title")));
+					SiteService.save(site);
+			    } catch (Exception e) {
+			    	M_log.debug("Exception setting page title", e);
+			    }
+			}
+	
 	    }
 
 	    placement.save();
 
 	    if (placement != null)
-		element = Web.escapeJavascript("Main" + placement.getId( ));
+	    	element = Web.escapeJavascript("Main" + placement.getId());
 
 	    if (placement != null)
-   	      config = placement.getConfig();
+	    	config = placement.getConfig();
+
 	    writeSetupPage(req, out, placement, element, config, oururl);
 
 	}
@@ -731,15 +746,17 @@ public class LinkTool extends HttpServlet
 	    }
 
 	    if (command != null) {
-		try {
-		    signature = sign(command);
-		    object = command + "&sign=" + signature;
-		} catch (Exception e) {};
+			try {
+			    signature = sign(command);
+			    object = command + "&sign=" + signature;
+			} catch (Exception e) {
+				M_log.debug("Cannot sign object ", e);
+			};
 	    }
 
 	    if (object == null) {
-		writeErrorPage(req, out, element, "Attempt to generate signed object failed", oururl);
-		return;
+			writeErrorPage(req, out, element, "Attempt to generate signed object failed", oururl);
+			return;
 	    }
 
 	    bodyonload = "setMainFrameHeight('" + element + "');setFocus(focus_path);";
@@ -782,18 +799,19 @@ public class LinkTool extends HttpServlet
 
 	private static SecretKey readSecretKey(String filename, String alg) {
 	    try {
-		FileInputStream file = new FileInputStream(filename);
-		byte[] bytes = new byte[file.available()];
-		file.read(bytes);
-		file.close();
-		SecretKey privkey = new SecretKeySpec(bytes, alg);
-		return privkey;
-	    } catch (Exception ignore) {
-		return null;
+			FileInputStream file = new FileInputStream(filename);
+			byte[] bytes = new byte[file.available()];
+			file.read(bytes);
+			file.close();
+			SecretKey privkey = new SecretKeySpec(bytes, alg);
+			return privkey;
+		} catch (Exception ignore) {
+			M_log.error("Unable to read key from " + filename);
+			return null;
 	    }
 	}
 
-    	private static char[] hexChars = {
+    private static char[] hexChars = {
 	    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
 	};
 
@@ -841,32 +859,44 @@ public class LinkTool extends HttpServlet
 	 *        directory. dirname assumed to end in /
 	 */
 
-        private void genkey(String dirname) {
-	    try {
-		/* Generate key. */
-		System.out.println("Generating key...");
-		SecretKey key = KeyGenerator.getInstance("Blowfish").generateKey();
-
-		/* Write private key to file. */
-		writeKey(key, dirname + privkeyname);
-
-	    } catch (Exception e) {
-		e.printStackTrace();
-	    }
+	private void genkey(String dirname) {
+        	
+		try {
+			/* Generate key. */
+			M_log.info("Generating new key in " + dirname + privkeyname);
+			SecretKey key = KeyGenerator.getInstance("Blowfish").generateKey();
+		
+			/* Write private key to file. */
+			writeKey(key, dirname + privkeyname);
+		} catch (Exception e) {
+			M_log.debug("Error generating key", e);
+		}
+	
 	}
 
-        /**
+    /**
 	 * Writes <code>key</code> to file with name <code>filename</code>
 	 *
 	 * @throws IOException if something goes wrong.
 	 */
-        private static void writeKey(Key key, String filename) throws IOException {
-	    FileOutputStream file = new FileOutputStream(filename);
-	    file.write(key.getEncoded());
-	    file.close();
+	private static void writeKey(Key key, String filename) {
+	    try
+		{
+			FileOutputStream file = new FileOutputStream(filename);
+			file.write(key.getEncoded());
+			file.close();
+		}
+		catch (FileNotFoundException e)
+		{
+			M_log.error("Unable to write new key to " + filename);
+		}
+		catch (IOException e)
+		{
+			M_log.error("Unable to write new key to " + filename);
+		}
 	}
 
-        // gensalt
+    // gensalt
 
 	/**
 	 * Generate a random salt, and write it to a file
@@ -876,42 +906,42 @@ public class LinkTool extends HttpServlet
 	 *        directory. dirname assumed to end in /
 	 */
 
-        private void gensalt(String dirname) {
+    private void gensalt(String dirname) {
 	    try {
-		// Generate a key for the HMAC-SHA1 keyed-hashing algorithm
-		KeyGenerator keyGen = KeyGenerator.getInstance("HmacSHA1");
-		SecretKey key = keyGen.generateKey();
-		writeKey(key, dirname + saltname);
+			// Generate a key for the HMAC-SHA1 keyed-hashing algorithm
+			KeyGenerator keyGen = KeyGenerator.getInstance("HmacSHA1");
+			SecretKey key = keyGen.generateKey();
+			writeKey(key, dirname + saltname);
 	    } catch (Exception e) {
-		e.printStackTrace();
+	    	M_log.debug("Error generating salt", e);
 	    }
 	}
 
-        public String encrypt(String str) {
+    public String encrypt(String str) {
 	    try {
-		Cipher ecipher = Cipher.getInstance("Blowfish");
-		ecipher.init(Cipher.ENCRYPT_MODE, secretKey);
-
-		// Encode the string into bytes using utf-8
-		byte[] utf8 = str.getBytes("UTF8");
-
-		// Encrypt
-		byte[] enc = ecipher.doFinal(utf8);
-    
-		// Encode bytes to base64 to get a string
-		return byteArray2Hex(enc);
+			Cipher ecipher = Cipher.getInstance("Blowfish");
+			ecipher.init(Cipher.ENCRYPT_MODE, secretKey);
+	
+			// Encode the string into bytes using utf-8
+			byte[] utf8 = str.getBytes("UTF8");
+	
+			// Encrypt
+			byte[] enc = ecipher.doFinal(utf8);
+	    
+			// Encode bytes to base64 to get a string
+			return byteArray2Hex(enc);
 	    } catch (javax.crypto.BadPaddingException e) {
-		System.out.println("linktool encrypt bad padding");
+	    	M_log.warn("linktool encrypt bad padding");
 	    } catch (javax.crypto.IllegalBlockSizeException e) {
-		System.out.println("linktool encrypt illegal block size");
+	    	M_log.warn("linktool encrypt illegal block size");
 	    } catch (java.security.NoSuchAlgorithmException e) {
-		System.out.println("linktool encrypt no such algorithm");
+	    	M_log.warn("linktool encrypt no such algorithm");
 	    } catch (java.security.InvalidKeyException e) {
-		System.out.println("linktool encrypt invalid key");
+	    	M_log.warn("linktool encrypt invalid key");
 	    } catch (javax.crypto.NoSuchPaddingException e) {
-		System.out.println("linktool encrypt no such padding");
+	    	M_log.warn("linktool encrypt no such padding");
 	    } catch (java.io.UnsupportedEncodingException e) {
-		System.out.println("linktool encrypt unsupported encoding");
+	    	M_log.warn("linktool encrypt unsupported encoding");
 	    } 
 	    return null;
 	}
