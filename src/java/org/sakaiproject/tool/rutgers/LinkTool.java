@@ -361,8 +361,8 @@ public class LinkTool extends HttpServlet
 			};
 
 	    } else {
-	    	// Cannot generate a correctly signed URL for some reason, so just encode the URL we have
-	    	url = URLEncoder.encode(url);
+	    	// Cannot generate a correctly signed URL for some reason, so just use the URL as is
+	    	M_log.debug("Cannot generate signed URL for remote application");
 	    }
 
 	    // now put out a vestigial web page, whose main functional
@@ -384,7 +384,7 @@ public class LinkTool extends HttpServlet
 	    //		System.out.println("query: " + query);
 	    //	    else
 	    //		System.out.println("no query");
-	    if (query != null && query.equals("Setup")) {
+	    if (query != null && query.equals("Setup") && SiteService.allowUpdateSite(siteid)) {
 			if (writeSetupPage(req, out, placement, element, config, oururl))
 			    return;
 	    }
@@ -709,12 +709,23 @@ public class LinkTool extends HttpServlet
 	    String bodyonload = null;
 
 	    if (placement != null)
-		element = Web.escapeJavascript("Main" + placement.getId( ));
+	    	element = Web.escapeJavascript("Main" + placement.getId( ));
 	    else {
-		writeErrorPage(req, out, element, "Unable to find the current tool", oururl);
-		return;
+			writeErrorPage(req, out, element, "Unable to find the current tool", oururl);
+			return;
 	    }
 
+	    String siteid = placement.getContext();
+	    if (siteid == null) {
+			writeErrorPage(req, out, element, "Unable to find the current site", oururl);
+			return;
+	    }
+
+	    if (!SiteService.allowUpdateSite(siteid)) {
+			writeErrorPage(req, out, element, "You are not allowed to generate an object", oururl);
+			return;
+	    }
+	    
 	    Session s = SessionManager.getCurrentSession();
 	    if (s != null) {
 		// System.out.println("got session " + s.getId());
