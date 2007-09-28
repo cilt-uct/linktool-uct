@@ -13,6 +13,10 @@
 // Adding PEAR to the include_path may be required depending on local php config
 // ini_set("include_path","/usr/share/php");
 
+// Show errors
+error_reporting(E_ALL^E_NOTICE);
+
+// Script path
   $signingurl = "SakaiSigning.jws?wsdl";
 
 // Get the linktool parameters
