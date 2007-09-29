@@ -8,7 +8,7 @@
 			description="For linking to external applications.">
 
 		<configuration name="url" value="http://nightly2.sakaiproject.org/linktool/linktool.php" />
-		<configuration name="height" value="75px" />
+		<configuration name="height" value="750px" />
                 <category name="course" />
                 <category name="project" />
 
