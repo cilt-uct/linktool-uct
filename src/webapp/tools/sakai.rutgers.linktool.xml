@@ -5,10 +5,10 @@
 	<tool
 			id="sakai.rutgers.linktool"
 			title="Link Tool"
-			description="A tool to link to external applications.">
+			description="For linking to external applications.">
 
-		<configuration name="url" value="http://rulink.rutgers.edu/testlink.php" />
-		<configuration name="height" value="600px" />
+		<configuration name="url" value="http://nightly2.sakaiproject.org/linktool/linktool.php" />
+		<configuration name="height" value="75px" />
                 <category name="course" />
                 <category name="project" />
 

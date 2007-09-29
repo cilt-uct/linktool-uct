@@ -4,11 +4,11 @@
 
 	<tool
 			id="sakai.rutgers.testlink"
-			title="Test Link"
-			description="A test of the link tool.">
+			title="Link Tool Example"
+			description="Example of the link tool under another tool id and name.">
 
-		<configuration name="url" value="https://rulink.rutgers.edu/testlink.php" />
-		<configuration name="height" value="600px" />
+		<configuration name="url" value="http://nightly2.sakaiproject.org/linktool/linktool.php" />
+		<configuration name="height" value="750px" />
 
 		<keyword name="linktool" />
 
