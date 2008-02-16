@@ -745,7 +745,7 @@ public class LinkTool extends HttpServlet
 
 		if (current != null && current.equals("yes"))
 		    command = "currentuser";
-		else if (requser != null & !requser.equals(""))
+		else if (requser != null && !requser.equals(""))
 		    command = "user=" + requser;
 		else {
 		    writeErrorPage(req, out, element, "No username supplied", oururl);
