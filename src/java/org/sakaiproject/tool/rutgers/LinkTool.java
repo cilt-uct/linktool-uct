@@ -153,10 +153,10 @@ public class LinkTool extends HttpServlet
 
 		ourUrl = ServerConfigurationService.getString("sakai.rutgers.linktool.serverUrl");
 		// System.out.println("linktool url " + ourUrl);
-		if (ourUrl == null || ourUrl.equals(""))
+		if (ourUrl == null || "".equals(ourUrl))
 		    ourUrl = ServerConfigurationService.getServerUrl();
 		// System.out.println("linktool url " + ourUrl);
-		if (ourUrl == null || ourUrl.equals(""))
+		if (ourUrl == null || "".equals(ourUrl))
 		    ourUrl = "http://127.0.0.1:8080";
 
 		// System.out.println("linktool url " + ourUrl);
@@ -251,7 +251,7 @@ public class LinkTool extends HttpServlet
 		sessionid = s.getId();
 	    }
 
-	    if (userid != null && (euid == null || euid.equals("")))
+	    if (userid != null && (euid == null || "".equals(euid)))
 		euid = userid;
 
 	    // site is there only for tools, otherwise have to use user's arg
@@ -384,7 +384,7 @@ public class LinkTool extends HttpServlet
 	    //		System.out.println("query: " + query);
 	    //	    else
 	    //		System.out.println("no query");
-	    if (query != null && query.equals("Setup") && SiteService.allowUpdateSite(siteid)) {
+	    if (query != null && "Setup".equals(query) && SiteService.allowUpdateSite(siteid)) {
 			if (writeSetupPage(req, out, placement, element, config, oururl))
 			    return;
 	    }
@@ -589,7 +589,7 @@ public class LinkTool extends HttpServlet
 	protected void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
 	{
 	    String query = req.getQueryString();
-	    if (query.equals("SignForm")) {
+	    if ("SignForm".equals(query)) {
 			doSignForm(req, res);
 			return;
 	    }
@@ -646,7 +646,7 @@ public class LinkTool extends HttpServlet
 		    	      safetrim(req.getParameter("height")));
 
 	    String newtitle = safetrim(req.getParameter("title"));
-	    if (newtitle != null && newtitle.equals(""))
+	    if (newtitle != null && "".equals(newtitle))
 	    	newtitle = null;
 
 	    if (newtitle != null) {
@@ -743,9 +743,9 @@ public class LinkTool extends HttpServlet
 		String requser = safetrim(req.getParameter("user"));
 		String current = safetrim(req.getParameter("current"));
 
-		if (current != null && current.equals("yes"))
+		if (current != null && "yes".equals(current))
 		    command = "currentuser";
-		else if (requser != null && !requser.equals(""))
+		else if (requser != null && !"".equals(requser))
 		    command = "user=" + requser;
 		else {
 		    writeErrorPage(req, out, element, "No username supplied", oururl);
