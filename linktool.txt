@@ -379,9 +379,28 @@ There are two forms of call to getsession
   $result=$myProxy->getsession($_SERVER['QUERY_STRING'], $obj);
   $result=$myProxy->getsession($obj);
 
-where $obj is one of the session privilege objects. If you supply the
-query string it is checked, except that the time is not checked.
-That's because this operation might reasonably be done long after
+where $obj is one of the session privilege objects. 
+
+In clustered configurations where Sakai is running behind a load balancer, 
+the session returned is only valid for a specific application server. To 
+ensure that subsequent calls by applications use the application server on 
+which the session is valid, either configure the load-balancer to use 
+IP-address-based load balancing for calls to /sakai-axis/ webservices, or 
+if individual application servers can be accessed through direct URLs 
+bypassing the load balancer, use these forms of getsession which return a 
+comma-separated session id and server URL. The server URL should be used for
+subsequent webservices calls using the given session id.
+
+  $result=$myProxy->getSessionToServer($_SERVER['QUERY_STRING'], $obj);
+  $result=$myProxy->getSessionToServer($obj);
+
+These methods require the sakai.properties setting webservices.directurl
+to be configured for each application server (for example in local.properties).
+See http://jira.sakaiproject.org/jira/browse/SAK-14335 and 
+http://jira.sakaiproject.org/jira/browse/SAK-13393 for more details.
+
+If you supply the query string it is checked, except that the time is not 
+checked. That's because this operation might reasonably be done long after
 the initial connection (e.g. at the end when you're about to report
 grades). At that point the time might be past. For this reason,
 you should always do testsign at the beginning, even if you're going
