@@ -817,7 +817,13 @@ public class LinkTool extends HttpServlet
 		} catch (Exception ignore) {
 			M_log.error("Unable to read key from " + filename);
 	    } finally {
-	        if (file != null) file.close();
+	        if (file != null) {
+                try {
+                    file.close();
+                } catch (IOException e) {
+                    // tried
+                }
+	        }
 	    }
         return privkey;
 	}
@@ -902,7 +908,13 @@ public class LinkTool extends HttpServlet
 		catch (IOException e) {
 			M_log.error("Unable to write new key to " + filename);
 		} finally {
-		    if (file != null) file.close();
+            if (file != null) {
+                try {
+                    file.close();
+                } catch (IOException e) {
+                    // tried
+                }
+            }
 		}
 	}
 
