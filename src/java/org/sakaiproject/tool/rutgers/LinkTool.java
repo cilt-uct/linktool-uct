@@ -804,20 +804,22 @@ public class LinkTool extends HttpServlet
 	 * 
 	 * @param filename
 	 *        Contains the key in proper binary format
+	 * @return the secret key object OR null if there is a failure
 	 */
-
 	private static SecretKey readSecretKey(String filename, String alg) {
+	    SecretKey privkey = null;
+	    FileInputStream file = null;
 	    try {
-			FileInputStream file = new FileInputStream(filename);
+			file = new FileInputStream(filename);
 			byte[] bytes = new byte[file.available()];
 			file.read(bytes);
-			file.close();
-			SecretKey privkey = new SecretKeySpec(bytes, alg);
-			return privkey;
+			privkey = new SecretKeySpec(bytes, alg);
 		} catch (Exception ignore) {
 			M_log.error("Unable to read key from " + filename);
-			return null;
+	    } finally {
+	        if (file != null) file.close();
 	    }
+        return privkey;
 	}
 
     private static char[] hexChars = {
@@ -889,19 +891,18 @@ public class LinkTool extends HttpServlet
 	 * @throws IOException if something goes wrong.
 	 */
 	private static void writeKey(Key key, String filename) {
-	    try
-		{
-			FileOutputStream file = new FileOutputStream(filename);
+	    FileOutputStream file = null;
+	    try {
+			file = new FileOutputStream(filename);
 			file.write(key.getEncoded());
-			file.close();
 		}
-		catch (FileNotFoundException e)
-		{
+		catch (FileNotFoundException e) {
 			M_log.error("Unable to write new key to " + filename);
 		}
-		catch (IOException e)
-		{
+		catch (IOException e) {
 			M_log.error("Unable to write new key to " + filename);
+		} finally {
+		    if (file != null) file.close();
 		}
 	}
 
