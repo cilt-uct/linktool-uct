@@ -25,7 +25,7 @@ error_reporting(E_ALL^E_NOTICE);
   $signingurl = "SakaiSigning.jws?wsdl";
 
   $result = "";
-  $displayname = "";
+  $checksession = "";
 
 // Check for required variables
 if ($server != "") {
@@ -40,6 +40,10 @@ if ($server != "") {
   	$result=$signingProxy->getSessionToServer($querystring, $signedobject); 
   }
 
+  if (PEAR::isError($result)) {
+		$result = "SOAP Error: " . $result->getMessage();
+ 	 }
+  else  {
   list($sessionid, $newserver) = split(",", $result);
 
   $url2 = $newserver . "/sakai-axis/";
@@ -50,7 +54,11 @@ if ($server != "") {
   if (PEAR::isError($sakaiscript)) {
 	$result = "SOAP Error";
   } else {
-	$displayname = $sakaiscript->getCurrentUserDisplayName($sessionid);
+	$checksession = $sakaiscript->checkSession($sessionid);
+  	if (PEAR::isError($checksession)) {
+		$result = "SOAP Error: " . $checksession->getMessage();
+ 	 }
+  }
   }
 
 }
@@ -68,12 +76,20 @@ function fatal($msg) {
 function getproxy($url, $name) {
     require_once('SOAP/Client.php');
     $wsdl=new SOAP_WSDL("$url/$name.jws?wsdl", array("timeout" => 20));
+
     if (!$wsdl)
       fatal("This error should not happen. Unable to open connection to $url/$name.jws?wsdl");
 
     $myProxy=$wsdl->getProxy();
-    if (!$myProxy)
+    if (!$myProxy) {
       fatal("This error should not happen. getProxy returned null.");
+    }
+
+    if (!PEAR::isError($myProxy)) {
+    	// Disable SSL certificate checks (not a good idea for production systems)
+    	$myProxy->setOpt('curl', CURLOPT_SSL_VERIFYPEER, 0);
+    	$myProxy->setOpt('curl', CURLOPT_SSL_VERIFYHOST, 0); 
+    }
 
     return $myProxy;
   }   
@@ -169,15 +185,16 @@ This script is to test the functionality of the Sakai LinkTool from QA and other
 <table class="listHier" cellspacing="0" border="0" summary="Results">
 <tbody>
 <tr><td>Callback service</td><td><a href="<?=$url . $signingurl?>"><?=$url . $signingurl?></a></td></tr>
+<tr><td>Result</td><td><?=$result?></td></tr>
 <tr><td>Session id</td><td><?=$sessionid?></td></tr>
 <tr><td>Server</td><td><?=$newserver?></td></tr>
-<tr><td>Display name</td><td><?=htmlspecialchars($displayname)?></td></tr>
+<tr><td>Check session</td><td><?=$checksession?></td></tr>
 </tbody>
 </table>
 
 <? 
 
-$msg = "";
+$msg = "Unknown error.";
 
 if ($server == "") {
 
@@ -193,7 +210,7 @@ if ($server == "") {
 		$msg = "Could not connect to the callback web service. Check to see if the Callback service URL is correct.";
 	}
 
-	if (!defined($sessionid)) {
+	if (!isset($sessionid)) {
 		$msg = "Did not get a valid session id from the web service. The signed object may be invalid.";
 	}
 
@@ -201,9 +218,9 @@ if ($server == "") {
 		$msg = "No signed object was specified. Perhaps this script was not called by the LinkTool verification script.";
 	}
 
-	if (strlen($displayname) > 0) {
+	if (!PEAR::isError($checksession) && strlen($checksession) > 0) {
 		$msg = "OK";
-	}
+	} 
 }
 
 ?>
