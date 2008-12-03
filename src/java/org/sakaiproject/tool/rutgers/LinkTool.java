@@ -49,6 +49,7 @@ import org.sakaiproject.tool.api.Session;
 import org.sakaiproject.tool.cover.SessionManager;
 import org.sakaiproject.tool.cover.ToolManager;
 import org.sakaiproject.tool.api.Placement;
+import org.sakaiproject.util.Validator;
 import org.sakaiproject.util.Web;
 import org.sakaiproject.component.cover.ServerConfigurationService;
 
@@ -353,7 +354,7 @@ public class LinkTool extends HttpServlet
 			    
 		    	signature = sign(command);
 		    	url = url + "?" + command + "&sign=" + signature;
-			    bodyonload.append("window.location = '" + url.replaceAll("&","&amp;") + "';");
+			    bodyonload.append("window.location = '" + Validator.escapeJsQuoted(Validator.escapeHtml(url)) + "';");
 			} catch (Exception e) {
 				M_log.debug("Exception signing command", e);
 			};
@@ -436,7 +437,7 @@ public class LinkTool extends HttpServlet
 	    out.println(headHtml + sakaiHead + headHtml1 + (height+50) + "px" + headHtml2 + bodyonload + headHtml3);
 	    out.println("<div class=\"portletBody\">");
 	    out.println("<div class=\"navIntraTool\"><a href='" + oururl + "?Setup'>Setup</a></div>");
-   	    out.println("<iframe src=\"" + url.replaceAll("&","&amp;") + "\" height=\"" + height + "\" " + 
+   	    out.println("<iframe src=\"" + Validator.escapeHtml(url) + "\" height=\"" + height + "\" " + 
 	    		"width=\"100%\" frameborder=\"0\" marginwidth=\"0\" marginheight=\"0\" scrolling=\"auto\" style=\"padding: 0.15em 0em 0em 0em;\" />");
    	    out.println("</div>");
    	    out.println(tailHtml);
@@ -481,9 +482,9 @@ public class LinkTool extends HttpServlet
 	    out.println("<form method='post' action='" + oururl + "?SetupForm'>");
 	    // <p class="shorttext"><label for="id">Description</label><textarea id="description_0" name="description_0" rows="5" cols="80" wrap="virtual"></textarea></p>
 	    out.println("<p class=\"shorttext\"><label for=\"url\">URL</label><input id=\"url\" type=\"text\" name=\"url\" size=\"70\" value=\"" +
-			config.getProperty("url") + "\"/></p>");
+			Validator.escapeHtml(config.getProperty("url")) + "\"/></p>");
 	    out.println("<p class=\"shorttext\"><label for=\"height\">Height</label><input id=\"height\" type=\"text\" name=\"height\" value=\"" +
-			config.getProperty("height") + "\"/></p>");
+			Validator.escapeHtml(config.getProperty("height")) + "\"/></p>");
 	    if (placement != null)
 	    	out.println("<p class=\"shorttext\"><label for=\"pagetitle\">Page title</label><input id=\"pagetitle\" type=\"text\" name=\"title\" value=\"" +
 	    			placement.getTitle() + "\"/></p>");
