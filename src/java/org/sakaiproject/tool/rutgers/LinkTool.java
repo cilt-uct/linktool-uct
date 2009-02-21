@@ -49,6 +49,8 @@ import org.sakaiproject.tool.api.Session;
 import org.sakaiproject.tool.cover.SessionManager;
 import org.sakaiproject.tool.cover.ToolManager;
 import org.sakaiproject.tool.api.Placement;
+import org.sakaiproject.user.api.User;
+import org.sakaiproject.user.cover.UserDirectoryService;
 import org.sakaiproject.util.Validator;
 import org.sakaiproject.util.Web;
 import org.sakaiproject.component.cover.ServerConfigurationService;
@@ -149,7 +151,7 @@ public class LinkTool extends HttpServlet
 		}
 
 		salt = readSecretKey(homedir + saltname, "HmacSHA1");
-
+		
 		ourUrl = ServerConfigurationService.getString("sakai.rutgers.linktool.serverUrl");
 		// System.out.println("linktool url " + ourUrl);
 		if (ourUrl == null || "".equals(ourUrl))
@@ -218,7 +220,13 @@ public class LinkTool extends HttpServlet
 	    
 		res.setContentType("text/html; charset=utf-8");
 	    PrintWriter out = res.getWriter();
-		 
+
+		if (secretKey == null || salt == null) {
+			M_log.error("Linktool missing secret key or salt");
+			writeErrorPage(req, out, null, "Linktool is not configured correctly", null);
+			return;	    
+		}
+
 	    String userid = null;
 	    String euid = null;
 	    String siteid = null;
@@ -230,6 +238,8 @@ public class LinkTool extends HttpServlet
 	    String oururl = req.getRequestURI();
 	    String query = req.getQueryString();
 
+	    boolean isAnon = false;
+	    
 	    // set frame height
 
 	    StringBuffer bodyonload = new StringBuffer();
@@ -243,11 +253,17 @@ public class LinkTool extends HttpServlet
 
 	    // we can always get the userid from the session
 	    Session s = SessionManager.getCurrentSession();
-	    if (s != null) {
-		// System.out.println("got session " + s.getId());
+	    if (s != null && s.getUserId() != null) {
+	    	M_log.debug("got session " + s.getId());
 		userid = s.getUserId();
 		euid = s.getUserEid();
 		sessionid = s.getId();
+	    } else {
+	    	// No valid user session
+	    	User anon = UserDirectoryService.getAnonymousUser();
+	    	userid = anon.getId();
+	    	euid = anon.getEid();
+	    	isAnon = true;
 	    }
 
 	    if (userid != null && (euid == null || "".equals(euid)))
@@ -283,14 +299,17 @@ public class LinkTool extends HttpServlet
 			}
 	    }
 
-	    if (realm != null && userid != null)
+	    if (realm != null && userid != null && !isAnon)
 		r = realm.getUserRole(userid);
 	    if (r != null) {
 		rolename = r.getId();
 	    }
 
-	    if (sessionid != null)
-		sessionid = encrypt(sessionid);
+	    // Check for .auth or .anon role
+	    if (rolename == null)
+	    	rolename = isAnon ? AuthzGroupService.ANON_ROLE : AuthzGroupService.AUTH_ROLE;
+	    
+		sessionid = (sessionid != null) ? encrypt(sessionid) : "";
 
 	    // generate redirect, as url?user=xxx&site=xxx
 
@@ -361,7 +380,8 @@ public class LinkTool extends HttpServlet
 
 	    } else {
 	    	// Cannot generate a correctly signed URL for some reason, so just use the URL as is
-	    	M_log.debug("Cannot generate signed URL for remote application");
+	    	M_log.debug("Cannot generate signed URL for remote application: url=" + url + " userid=" + userid + " siteid=" + siteid + "rolename=" + rolename + " sessionid=" + sessionid);
+
 	    }
 
 	    // now put out a vestigial web page, whose main functional
@@ -564,7 +584,8 @@ public class LinkTool extends HttpServlet
 	    
 	    out.println("<div class=\"alertMessage\">" + error + "</div>");
 
-	    out.println("<p><a href=\"" + oururl + "?panel=Main\">Return to tool</a></p>");
+	    if (oururl != null)
+	    	out.println("<p><a href=\"" + oururl + "?panel=Main\">Return to tool</a></p>");
 	    out.println("</div>");
 
 	    out.println(tailHtml);
