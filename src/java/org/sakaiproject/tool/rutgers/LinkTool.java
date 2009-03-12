@@ -78,23 +78,23 @@ import org.sakaiproject.authz.cover.SecurityService;
 public class LinkTool extends HttpServlet
 {
    private static final String headHtml = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\" xml:lang=\"en\">\n<head><title>Link Tool</title>";
-
+   
    private static final String headHtml1 = "<script type=\"text/javascript\" language=\"JavaScript\">function setFrameHeight(id) { var frame = parent.document.getElementById(id); if (frame) {                var objToResize = (frame.style) ? frame.style : frame; objToResize.height = \""; 
-      
+   
    private static final String headHtml2 = "\";  }} </script></head>\n<body onload=\"";
-
+   
    private static final String headHtml3 = "\" style='margin:0;padding:0;'>";
-
+   
    private static final String tailHtml = "</body></html>";
-
+   
    /** Our log (commons). */
    private static Log M_log = LogFactory.getLog(LinkTool.class);
-
+   
    private static String homedir = null;
    private static SecretKey secretKey = null;
    private static SecretKey salt = null;
    private static String ourUrl = null;
-
+   
    /** Helper tool for options. */
    private static final String OPTIONS_HELPER = "sakai.tool_config.helper";
    
@@ -282,6 +282,28 @@ public class LinkTool extends HttpServlet
       if (url == null && config != null)
          url = config.getProperty("url", null);
       
+      if (url == null && config != null) {
+         String urlProp = config.getProperty("urlProp", null);
+         
+         if (urlProp != null) {
+            url = ServerConfigurationService.getString(urlProp);
+         }
+      }
+      
+      boolean trustedService = isTrusted(config);
+      
+      if (trustedService) {
+         String appendChar = "?";
+         if (url.contains("?")) {
+            appendChar = "&";
+         }
+         try {
+            String signingObject = "currentuser&sign=" + sign("currentuser");
+            url += appendChar + "signedobject=" + URLEncoder.encode(signingObject);
+         } catch (Exception e) {
+            
+         }
+      }
       // now get user's role in site; must be defined
       String realmId = null;
       AuthzGroup realm = null;
@@ -411,7 +433,7 @@ public class LinkTool extends HttpServlet
       // If user can update site, add config menu
       // placement and config should be defined in tool mode
       // in non-tool mode, there's no config to update
-      if (placement != null && config != null && SiteService.allowUpdateSite(siteid)) {
+      if (placement != null && config != null && SiteService.allowUpdateSite(siteid) && !trustedService) {
          if (writeOwnerPage(req, out, height, url, element, oururl))
             return;
       }
@@ -423,6 +445,10 @@ public class LinkTool extends HttpServlet
       
       //       res.sendRedirect(res.encodeRedirectURL(config.getProperty("url", "/")));
       
+   }
+   
+   protected Boolean isTrusted(Properties config) {
+      return new Boolean(config.getProperty("trustedService", "false"));
    }
    
    /**

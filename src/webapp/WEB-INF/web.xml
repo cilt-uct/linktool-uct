@@ -26,6 +26,20 @@
         <dispatcher>INCLUDE</dispatcher>
     </filter-mapping>
 
+    <!-- 
+       This is a sample tool highlighting how to add a pre-configured linktool.
+       see also the rsn.linktool.pentaho.xml sample tool registration file
+    -->
+    <!--
+    <filter-mapping>
+        <filter-name>sakai.request</filter-name>
+        <servlet-name>rsn.linktool.pentaho</servlet-name>
+        <dispatcher>REQUEST</dispatcher>
+        <dispatcher>FORWARD</dispatcher>
+        <dispatcher>INCLUDE</dispatcher>
+    </filter-mapping>
+    -->
+
     <servlet>
         <servlet-name>sakai.rutgers.linktool</servlet-name>
         <servlet-class>org.sakaiproject.tool.rutgers.LinkTool</servlet-class>
@@ -37,6 +51,18 @@
         <servlet-class>org.sakaiproject.tool.rutgers.LinkTool</servlet-class>
         <load-on-startup>1</load-on-startup>
     </servlet>
+
+    <!-- 
+       This is a sample tool highlighting how to add a pre-configured linktool.
+       see also the rsn.linktool.pentaho.xml sample tool registration file
+    -->
+    <!--
+    <servlet>
+        <servlet-name>rsn.linktool.pentaho</servlet-name>
+        <servlet-class>org.sakaiproject.tool.rutgers.LinkTool</servlet-class>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+    -->
 
     <servlet-mapping>
         <servlet-name>sakai.rutgers.linktool</servlet-name>
