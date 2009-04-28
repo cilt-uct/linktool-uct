@@ -21,22 +21,28 @@
 
 package org.sakaiproject.tool.rutgers;
 
-import java.io.*;
-
-import java.security.*;
-
-import javax.crypto.*;
-import javax.crypto.spec.*;
-
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.URLEncoder;
-
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 import java.util.Properties;
+import java.util.Set;
 import java.util.regex.Pattern;
 
+import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.Mac;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -45,27 +51,24 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
+import org.sakaiproject.authz.api.AuthzGroup;
+import org.sakaiproject.authz.api.Role;
+import org.sakaiproject.authz.cover.AuthzGroupService;
+import org.sakaiproject.authz.cover.SecurityService;
+import org.sakaiproject.component.cover.ServerConfigurationService;
+import org.sakaiproject.site.api.Site;
+import org.sakaiproject.site.api.SitePage;
+import org.sakaiproject.site.api.ToolConfiguration;
+import org.sakaiproject.site.cover.SiteService;
+import org.sakaiproject.tool.api.Placement;
 import org.sakaiproject.tool.api.Session;
 import org.sakaiproject.tool.cover.SessionManager;
 import org.sakaiproject.tool.cover.ToolManager;
-import org.sakaiproject.tool.api.Placement;
 import org.sakaiproject.user.api.User;
 import org.sakaiproject.user.cover.UserDirectoryService;
 import org.sakaiproject.util.Validator;
 import org.sakaiproject.util.Web;
-import org.sakaiproject.component.cover.ServerConfigurationService;
-
-import org.sakaiproject.site.cover.SiteService;
-import org.sakaiproject.site.api.Site;
-import org.sakaiproject.site.api.SitePage;
-
-import org.sakaiproject.site.api.ToolConfiguration;
-
-import org.sakaiproject.authz.cover.AuthzGroupService;
-import org.sakaiproject.authz.api.AuthzGroup;
-import org.sakaiproject.authz.api.Role;
-
-import org.sakaiproject.authz.cover.SecurityService;
 
 /**
  * <p>
@@ -75,8 +78,11 @@ import org.sakaiproject.authz.cover.SecurityService;
  * @author Charles Hedrick, Rutgers University.
  * @version $Revision: $
  */
+@SuppressWarnings("serial")
 public class LinkTool extends HttpServlet
 {
+   private static final String UTF8 = "UTF-8";
+
    private static final String headHtml = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\" xml:lang=\"en\">\n<head><title>Link Tool</title>";
    
    private static final String headHtml1 = "<script type=\"text/javascript\" language=\"JavaScript\">function setFrameHeight(id) { var frame = parent.document.getElementById(id); if (frame) {                var objToResize = (frame.style) ? frame.style : frame; objToResize.height = \""; 
@@ -86,22 +92,19 @@ public class LinkTool extends HttpServlet
    private static final String headHtml3 = "\" style='margin:0;padding:0;'>";
    
    private static final String tailHtml = "</body></html>";
+
+   private static final String privkeyname = "sakai.rutgers.linktool.privkey";
+   private static final String saltname = "sakai.rutgers.linktool.salt";
    
    /** Our log (commons). */
    private static Log M_log = LogFactory.getLog(LinkTool.class);
    
-   private static String homedir = null;
-   private static SecretKey secretKey = null;
-   private static SecretKey salt = null;
-   private static String ourUrl = null;
+   private String homedir = null;
+   private SecretKey secretKey = null;
+   private SecretKey salt = null;
+   private String ourUrl = null;
    
-   /** Helper tool for options. */
-   private static final String OPTIONS_HELPER = "sakai.tool_config.helper";
-   
-   private static final String privkeyname = "sakai.rutgers.linktool.privkey";
-   private static final String saltname = "sakai.rutgers.linktool.salt";
-   
-   private Set illegalParams;
+   private Set<String> illegalParams;
    private Pattern legalKeys;
    
    /**
@@ -162,7 +165,7 @@ public class LinkTool extends HttpServlet
       
       // System.out.println("linktool url " + ourUrl);
       
-      illegalParams = new HashSet();
+      illegalParams = new HashSet<String>();
       illegalParams.add("user");
       illegalParams.add("internaluser");
       illegalParams.add("site");
@@ -205,6 +208,7 @@ public class LinkTool extends HttpServlet
     * @throws IOException.
     */
    
+   @SuppressWarnings("unchecked")
    protected void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
    {
       
@@ -232,7 +236,6 @@ public class LinkTool extends HttpServlet
       String siteid = null;
       String sessionid = null;
       String url = null;
-      String command = null;
       String signature = null;
       String element = null;
       String oururl = req.getRequestURI();
@@ -299,7 +302,7 @@ public class LinkTool extends HttpServlet
          }
          try {
             String signingObject = "currentuser&sign=" + sign("currentuser");
-            url += appendChar + "signedobject=" + URLEncoder.encode(signingObject);
+            url += appendChar + "signedobject=" + URLEncoder.encode(signingObject, UTF8);
          } catch (Exception e) {
             
          }
@@ -338,14 +341,17 @@ public class LinkTool extends HttpServlet
       if (url != null && userid != null && siteid != null && rolename != null && sessionid != null) {
          
          // command is the thing that will be signed
-         command = "user=" + URLEncoder.encode(euid) + 
-            "&internaluser=" + URLEncoder.encode(userid) + 
-            "&site=" + URLEncoder.encode(siteid) + 
-            "&role=" + URLEncoder.encode(rolename) +
-            "&session=" + URLEncoder.encode(sessionid) +
-            "&serverurl=" + URLEncoder.encode(ourUrl) +
+    	  
+    	 StringBuilder command = new StringBuilder();
+    	 
+         command.append("user=" + URLEncoder.encode(euid, UTF8) + 
+            "&internaluser=" + URLEncoder.encode(userid, UTF8) + 
+            "&site=" + URLEncoder.encode(siteid, UTF8) + 
+            "&role=" + URLEncoder.encode(rolename, UTF8) +
+            "&session=" + URLEncoder.encode(sessionid, UTF8) +
+            "&serverurl=" + URLEncoder.encode(ourUrl, UTF8) +
             "&time=" + System.currentTimeMillis() +
-            "&placement=" + URLEncoder.encode(placementId);
+            "&placement=" + URLEncoder.encode(placementId, UTF8));
          
          // pass on any other arguments from the user.
          // but sanitize them to prevent people from trying to
@@ -366,7 +372,7 @@ public class LinkTool extends HttpServlet
                M_log.debug("Exception getting key/value", e);
             }
             if (!illegalParams.contains(key.toLowerCase()) && legalKeys.matcher(key).matches())
-               command = command + "&" + key + "=" + URLEncoder.encode(value);
+               command.append("&" + key + "=" + URLEncoder.encode(value, UTF8));
          }
          
          // Pass on additional parameters from the tool mode configured url
@@ -384,7 +390,7 @@ public class LinkTool extends HttpServlet
                   String key = pval[0];
                   String value = pval[1];
                   if (!illegalParams.contains(key.toLowerCase()) && legalKeys.matcher(key).matches())
-                     command = command + "&" + key + "=" + URLEncoder.encode(value);               
+                     command.append(command + "&" + key + "=" + URLEncoder.encode(value, UTF8));               
                }
             }     
             
@@ -393,12 +399,12 @@ public class LinkTool extends HttpServlet
          try {
             // System.out.println("sign >" + command + "<");
             
-            signature = sign(command);
+            signature = sign(command.toString());
             url = url + "?" + command + "&sign=" + signature;
             bodyonload.append("window.location = '" + Validator.escapeJsQuoted(Validator.escapeHtml(url)) + "';");
          } catch (Exception e) {
             M_log.debug("Exception signing command", e);
-         };
+         }
          
       } else {
          // Cannot generate a correctly signed URL for some reason, so just use the URL as is
@@ -447,8 +453,8 @@ public class LinkTool extends HttpServlet
       
    }
    
-   protected Boolean isTrusted(Properties config) {
-      return new Boolean(config.getProperty("trustedService", "false"));
+   protected boolean isTrusted(Properties config) {
+      return Boolean.valueOf(config.getProperty("trustedService", "false")).booleanValue();
    }
    
    /**
@@ -531,8 +537,7 @@ public class LinkTool extends HttpServlet
                   Validator.escapeHtml(config.getProperty("url")) + "\"/></p>");
       out.println("<p class=\"shorttext\"><label for=\"height\">Height</label><input id=\"height\" type=\"text\" name=\"height\" value=\"" +
                   Validator.escapeHtml(config.getProperty("height")) + "\"/></p>");
-      if (placement != null)
-         out.println("<p class=\"shorttext\"><label for=\"pagetitle\">Page title</label><input id=\"pagetitle\" type=\"text\" name=\"title\" value=\"" +
+      out.println("<p class=\"shorttext\"><label for=\"pagetitle\">Page title</label><input id=\"pagetitle\" type=\"text\" name=\"title\" value=\"" +
                      placement.getTitle() + "\"/></p>");
       out.println("<p class=\"act\"><input type=\"submit\" value=\"Update Configuration\"/></p>");
       out.println("</form>");
@@ -648,15 +653,12 @@ public class LinkTool extends HttpServlet
       
       String userid = null;
       String siteid = null;
-      String url = null;
-      String command = null;
-      String signature = null;
       String element = null;
       String oururl = req.getRequestURI();
       
       // must be in tool mode
       if (placement == null) {
-         writeErrorPage(req, out, element, "Unable to find the current tool", oururl);
+         writeErrorPage(req, out, null, "Unable to find the current tool", oururl);
          return;
       }
       
@@ -664,7 +666,7 @@ public class LinkTool extends HttpServlet
       // this is safe because we verify that the user has a role in site
       siteid = placement.getContext();
       if (siteid == null) {
-         writeErrorPage(req, out, element, "Unable to find the current site", oururl);
+         writeErrorPage(req, out, null, "Unable to find the current site", oururl);
          return;
       }
       
@@ -675,12 +677,12 @@ public class LinkTool extends HttpServlet
       }
       
       if (userid == null) {
-         writeErrorPage(req, out, element, "Unable to figure out your userid", oururl);
+         writeErrorPage(req, out, null, "Unable to figure out your userid", oururl);
          return;
       }
       
       if (!SiteService.allowUpdateSite(siteid)) {
-         writeErrorPage(req, out, element, "You are not allowed to update this site", oururl);
+         writeErrorPage(req, out, null, "You are not allowed to update this site", oururl);
          return;
       }
       
@@ -714,11 +716,9 @@ public class LinkTool extends HttpServlet
       
       placement.save();
       
-      if (placement != null)
-         element = Web.escapeJavascript("Main" + placement.getId());
+      element = Web.escapeJavascript("Main" + placement.getId());
       
-      if (placement != null)
-         config = placement.getConfig();
+      config = placement.getConfig();
       
       writeSetupPage(req, out, placement, element, config, oururl);
       
@@ -757,7 +757,7 @@ public class LinkTool extends HttpServlet
       if (placement != null)
          element = Web.escapeJavascript("Main" + placement.getId( ));
       else {
-         writeErrorPage(req, out, element, "Unable to find the current tool", oururl);
+         writeErrorPage(req, out, null, "Unable to find the current tool", oururl);
          return;
       }
       
@@ -808,7 +808,7 @@ public class LinkTool extends HttpServlet
             object = command + "&sign=" + signature;
          } catch (Exception e) {
             M_log.debug("Cannot sign object ", e);
-         };
+         }
       }
       
       if (object == null) {
@@ -838,10 +838,12 @@ public class LinkTool extends HttpServlet
     * 
     * @param data
     *        The data to sign
+    * @throws NoSuchAlgorithmException 
+    * @throws InvalidKeyException 
     * @throws Exception.
     */
    
-   private static String sign(String data) throws Exception {
+   private String sign(String data) throws NoSuchAlgorithmException, InvalidKeyException {
       Mac sig = Mac.getInstance("HmacSHA1");
       sig.init(salt);
       return byteArray2Hex(sig.doFinal(data.getBytes()));
@@ -1015,4 +1017,5 @@ public class LinkTool extends HttpServlet
       } 
       return null;
    }
+
 }
