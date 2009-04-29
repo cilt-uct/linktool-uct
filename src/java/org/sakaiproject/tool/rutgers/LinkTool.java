@@ -99,7 +99,6 @@ public class LinkTool extends HttpServlet
    /** Our log (commons). */
    private static Log M_log = LogFactory.getLog(LinkTool.class);
    
-   private String homedir = null;
    private SecretKey secretKey = null;
    private SecretKey salt = null;
    private String ourUrl = null;
@@ -127,7 +126,8 @@ public class LinkTool extends HttpServlet
    public void init(ServletConfig config) throws ServletException
    {
       super.init(config);
-      homedir = ServerConfigurationService.getString("linktool.home", ServerConfigurationService.getSakaiHomePath());
+
+      String homedir = ServerConfigurationService.getString("linktool.home", ServerConfigurationService.getSakaiHomePath());
       if (homedir == null)
          homedir = "/etc/";
       if (!homedir.endsWith("/"))
@@ -454,6 +454,9 @@ public class LinkTool extends HttpServlet
    }
    
    protected boolean isTrusted(Properties config) {
+	  if (config == null)
+		  return false;
+	  
       return Boolean.valueOf(config.getProperty("trustedService", "false")).booleanValue();
    }
    
@@ -895,7 +898,8 @@ public class LinkTool extends HttpServlet
       for (int i = 0; i < ba.length; i++){
          int hbits = (ba[i] & 0x000000f0) >> 4;
          int lbits = ba[i] & 0x0000000f;
-         sb.append("" + hexChars[hbits] + hexChars[lbits]);
+         sb.append(hexChars[hbits]);
+         sb.append(hexChars[lbits]);
       }
       return sb.toString();
    }
