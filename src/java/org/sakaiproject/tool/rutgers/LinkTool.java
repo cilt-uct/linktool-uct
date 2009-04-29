@@ -170,6 +170,7 @@ public class LinkTool extends HttpServlet
       illegalParams.add("internaluser");
       illegalParams.add("site");
       illegalParams.add("role");
+      illegalParams.add("effectiverole");
       illegalParams.add("session");
       illegalParams.add("serverurl");
       illegalParams.add("url");
@@ -334,6 +335,9 @@ public class LinkTool extends HttpServlet
       if (rolename == null)
          rolename = isAnon ? AuthzGroupService.ANON_ROLE : AuthzGroupService.AUTH_ROLE;
       
+      // Check for "view as" effective role
+      String effectiverole = SecurityService.getUserEffectiveRole(realm.getId());
+ 
       sessionid = (sessionid != null) ? encrypt(sessionid) : "";
       
       // generate redirect, as url?user=xxx&site=xxx
@@ -352,6 +356,10 @@ public class LinkTool extends HttpServlet
             "&serverurl=" + URLEncoder.encode(ourUrl, UTF8) +
             "&time=" + System.currentTimeMillis() +
             "&placement=" + URLEncoder.encode(placementId, UTF8));
+      
+         if (effectiverole != null) {
+         	command.append("&effectiverole=" + URLEncoder.encode(effectiverole, UTF8));
+         }
          
          // pass on any other arguments from the user.
          // but sanitize them to prevent people from trying to

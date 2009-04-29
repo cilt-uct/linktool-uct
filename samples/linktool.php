@@ -29,6 +29,7 @@ error_reporting(E_ALL^E_NOTICE);
   $sessionid = strip_tags($_GET['session']);
   $placement = strip_tags($_GET['placement']);
   $role = strip_tags($_GET['role']);
+  $effectiverole = strip_tags($_GET['effectiverole']);
   $sign = strip_tags($_GET['sign']);
   $time = strip_tags($_GET['time']);
 
@@ -158,6 +159,7 @@ This script is to test the functionality of the Sakai LinkTool from QA and other
 <tr><td>internaluser</td><td><?=$user?></td><td>Sakai internal id (userid)</td></tr>
 <tr><td>site</td><td><?=$site?></td><td>Sakai site id</td></tr>
 <tr><td>role</td><td><?=$role?></td><td>Role in the site</td></tr>
+<tr><td>effectiverole</td><td><?=$effectiverole?></td><td>Effective "view as" role in the site (if set)</td></tr>
 <tr><td>sessionid</td><td><?=$sessionid?></td><td>Encrypted session id</td></tr>
 <tr><td>serverurl</td><td><?=$server?></td><td>URL of the calling server</td></tr>
 <tr><td>time</td><td><?=$time?></td><td>Time that script was invoked</td></tr>
@@ -173,6 +175,7 @@ This script is to test the functionality of the Sakai LinkTool from QA and other
  unset($_GET['user']);
  unset($_GET['site']);
  unset($_GET['role']);
+ unset($_GET['effectiverole']);
  unset($_GET['session']);
  unset($_GET['serverurl']);
  unset($_GET['time']);

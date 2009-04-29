@@ -141,6 +141,11 @@ different role names. If you're dealing with grading or other functions
 like that, it's probably safer to use isUserAbleToGradeStudent from 
 SakaiGradebook.jws to check permissions.
 
+  effectiverole - This is the user's effective role in the site, if
+set. If the user is not in "view as" mode and has no effective role,
+this parameter will not be passed. This feature was introduced in
+http://jira.sakaiproject.org/jira/browse/SAK-7924
+
   session - This is an encrypted version of the session ID for the
 current session. See below for how it is used.
 
