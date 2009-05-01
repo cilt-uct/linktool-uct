@@ -336,7 +336,7 @@ public class LinkTool extends HttpServlet
          rolename = isAnon ? AuthzGroupService.ANON_ROLE : AuthzGroupService.AUTH_ROLE;
       
       // Check for "view as" effective role
-      String effectiverole = SecurityService.getUserEffectiveRole(realm.getId());
+      String effectiverole = SecurityService.getUserEffectiveRole(realmId);
  
       sessionid = (sessionid != null) ? encrypt(sessionid) : "";
       
