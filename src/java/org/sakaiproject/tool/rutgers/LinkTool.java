@@ -170,7 +170,6 @@ public class LinkTool extends HttpServlet
       illegalParams.add("internaluser");
       illegalParams.add("site");
       illegalParams.add("role");
-      illegalParams.add("effectiverole");
       illegalParams.add("session");
       illegalParams.add("serverurl");
       illegalParams.add("url");
@@ -308,36 +307,23 @@ public class LinkTool extends HttpServlet
             
          }
       }
+      
       // now get user's role in site; must be defined
       String realmId = null;
-      AuthzGroup realm = null;
-      Role r = null;
       String rolename = null;
       
-      if (siteid != null)
+      if (siteid != null) {
          realmId = SiteService.siteReference(siteid);
-      
-      if (realmId != null) {
-         try {
-            realm = AuthzGroupService.getAuthzGroup(realmId);
-         } catch (Exception e) {
-            M_log.debug("Exception getting authzgroup for " + realmId, e);
-         }
       }
       
-      if (realm != null && userid != null && !isAnon)
-         r = realm.getUserRole(userid);
-      if (r != null) {
-         rolename = r.getId();
+      if (realmId != null && userid != null && !isAnon) {
+    	  rolename = AuthzGroupService.getUserRole(userid, realmId);
       }
       
       // Check for .auth or .anon role
       if (rolename == null)
          rolename = isAnon ? AuthzGroupService.ANON_ROLE : AuthzGroupService.AUTH_ROLE;
       
-      // Check for "view as" effective role
-      String effectiverole = SecurityService.getUserEffectiveRole(realmId);
- 
       sessionid = (sessionid != null) ? encrypt(sessionid) : "";
       
       // generate redirect, as url?user=xxx&site=xxx
@@ -357,10 +343,6 @@ public class LinkTool extends HttpServlet
             "&time=" + System.currentTimeMillis() +
             "&placement=" + URLEncoder.encode(placementId, UTF8));
       
-         if (effectiverole != null) {
-         	command.append("&effectiverole=" + URLEncoder.encode(effectiverole, UTF8));
-         }
-         
          // pass on any other arguments from the user.
          // but sanitize them to prevent people from trying to
          // fake out the parameters we pass, or using odd syntax
