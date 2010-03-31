@@ -38,24 +38,14 @@
       <groupId>org.sakaiproject.kernel</groupId>
       <artifactId>sakai-component-manager</artifactId>
     </dependency>
-<!--
-      This has been relocated to sakai-kernel-util
-      org.sakaiproject.kernel.utilsakai-util-->
-<!--javax.servletservlet-api${sakai.servletapi.version}provided-->
-<!--org.sakaiprojectsakai-tool-api${sakai.version}provided-->
-<!--org.sakaiprojectsakai-user-api${sakai.version}provided-->
-<!--org.sakaiprojectsakai-entity-api${sakai.version}provided-->
-<!--org.sakaiprojectsakai-site-api${sakai.version}provided-->
     <dependency>
       <groupId>commons-logging</groupId>
       <artifactId>commons-logging</artifactId>
-      <version>1.0.4</version>
-      <scope>provided</scope>
     </dependency>
-<!--org.sakaiprojectsakai-component-api${sakai.version}provided-->
-<!--org.sakaiprojectsakai-util-api${sakai.version}provided-->
-<!--org.sakaiprojectsakai-authz-api${sakai.version}provided-->
-<!--org.sakaiprojectsakai-util${sakai.version}-->
+    <dependency>
+    	<groupId>commons-lang</groupId>
+    	<artifactId>commons-lang</artifactId>
+    </dependency>
   </dependencies>
   <build>
     <resources/>

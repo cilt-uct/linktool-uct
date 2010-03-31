@@ -49,6 +49,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -411,7 +412,13 @@ public class LinkTool extends HttpServlet
          heights =  safetrim(config.getProperty("height", "600"));
          if (heights.endsWith("px"))
             heights = safetrim(heights.substring(0, heights.length()-2));
+         //what may be saved might not be a number
+         try {
          height = Integer.parseInt(heights);
+         } catch (NumberFormatException e) {
+        	 //nothing realy to do
+         }
+         
       }
       
       // now generate the page
@@ -683,8 +690,17 @@ public class LinkTool extends HttpServlet
       
       placement.getPlacementConfig().setProperty("url", 
                                                  safetrim(req.getParameter("url")));
-      placement.getPlacementConfig().setProperty("height", 
-                                                 safetrim(req.getParameter("height")));
+      
+      //is the req actualy a string?
+      String heights = safetrim(req.getParameter("height"));
+      try {
+    	  Integer.valueOf(heights);
+      } catch (NumberFormatException e) {
+    	  
+    	  writeErrorPage(req, out, null, StringEscapeUtils.escapeHtml(heights) + " is not a valid frame hight", oururl);
+      }
+      
+      placement.getPlacementConfig().setProperty("height", heights );
       
       String newtitle = safetrim(req.getParameter("title"));
       if (newtitle != null && "".equals(newtitle))
