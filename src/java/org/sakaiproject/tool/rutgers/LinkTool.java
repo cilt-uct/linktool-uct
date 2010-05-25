@@ -691,13 +691,13 @@ public class LinkTool extends HttpServlet
       placement.getPlacementConfig().setProperty("url", 
                                                  safetrim(req.getParameter("url")));
       
-      //is the req actualy a string?
+      //is the req actually a string?
       String heights = safetrim(req.getParameter("height"));
       try {
     	  Integer.valueOf(heights);
       } catch (NumberFormatException e) {
     	  
-    	  writeErrorPage(req, out, null, StringEscapeUtils.escapeHtml(heights) + " is not a valid frame hight", oururl);
+    	  writeErrorPage(req, out, null, StringEscapeUtils.escapeHtml(heights) + " is not a valid frame height", oururl);
       }
       
       placement.getPlacementConfig().setProperty("height", heights );
