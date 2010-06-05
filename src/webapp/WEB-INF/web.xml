@@ -40,6 +40,28 @@
     </filter-mapping>
     -->
 
+<!-- 
+     need ContextLoaderListener to load applicationContext.xml, 
+     which we need to bring in the EntityProducer
+-->
+
+<!--
+    <context-param>
+                <param-name>contextConfigLocation</param-name>
+                <param-value>/WEB-INF/local.xml</param-value>
+        </context-param>
+
+        <context-param>
+                <param-name>contextSharedLocation</param-name>
+                <param-value>/WEB-INF/components.xml</param-value>
+        </context-param>
+
+-->
+
+    <listener>
+        <listener-class>org.sakaiproject.util.ContextLoaderListener</listener-class>
+    </listener>
+
     <servlet>
         <servlet-name>sakai.rutgers.linktool</servlet-name>
         <servlet-class>org.sakaiproject.tool.rutgers.LinkTool</servlet-class>

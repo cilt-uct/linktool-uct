@@ -34,6 +34,16 @@ linktool.enabled=true
 Note that you do not need to set webservices.allowlogin. That controls login
 using the login function in SakaiLogin.jws.
 
+If you want import from archive to work, in 
+common/archive-impl/pack/src/webapp/WEB-INF/components.xml
+add to mergeFilteredSakaiServices
+<value>LinkToolEntityProducer</value>
+
+If you want to be able to copy linktools from an old site
+to a new one, you'll need to make sure that linktool or some tool based
+on it is not hidden, since the user will need to choose all tools that
+they want copied.
+
 
 INSTALL AS TOOL
 
@@ -342,6 +352,10 @@ tools menu to describe the tool
 project sites. You can remove one or both. If you remove both, an
 administrator will need to add it to the site (unless you give
 users access to site editor).
+
+  keyword - must be "linktool". This is how the site export,
+import and copy code figures out which tools need to use
+linktool's code.
 
 
 ACCESSING SAKAI SESSIONS FROM YOUR APPLICATION
