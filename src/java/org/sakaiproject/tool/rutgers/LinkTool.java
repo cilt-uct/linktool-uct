@@ -53,8 +53,6 @@ import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.sakaiproject.authz.api.AuthzGroup;
-import org.sakaiproject.authz.api.Role;
 import org.sakaiproject.authz.cover.AuthzGroupService;
 import org.sakaiproject.authz.cover.SecurityService;
 import org.sakaiproject.component.cover.ServerConfigurationService;
@@ -79,7 +77,7 @@ import org.sakaiproject.util.Web;
  * @author Charles Hedrick, Rutgers University.
  * @version $Revision: $
  */
-@SuppressWarnings("serial")
+@SuppressWarnings({ "serial", "deprecation" })
 public class LinkTool extends HttpServlet
 {
    private static final String UTF8 = "UTF-8";
@@ -831,11 +829,11 @@ public class LinkTool extends HttpServlet
       out.println(sakaiHead);
       out.println(headHtml1 + "300px" + headHtml2 + bodyonload + headHtml3);
       
-      out.println("<div class='portletBody'><h2>Your object</h2>");
-      out.println("<p>Here is your object. You should copy it and then paste it into a configuration file to be used in your application.");
-      out.println("<p>" + object);
+      out.println("<div class=\"portletBody\"><h2>Your object</h2>");
+      out.println("<p>Here is your object. You should copy it and then paste it into a configuration file to be used in your application.</p>");
+      out.println("<p>" + Web.escapeHtml(object) + "</p>");
       
-      out.println("<p><a href='" + oururl + "?panel=Main'>Return to tool</a>");
+      out.println("<p><a href='" + oururl + "?panel=Main'>Return to tool</a></p>");
       out.println("</div>");
       
       out.println(tailHtml);
