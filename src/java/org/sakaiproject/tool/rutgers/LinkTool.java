@@ -691,14 +691,19 @@ public class LinkTool extends HttpServlet
       
       //is the req actually a string?
       String heights = safetrim(req.getParameter("height"));
-      try {
-    	  Integer.valueOf(heights);
-      } catch (NumberFormatException e) {
+      int heightv = 600;
+      if (heights != null && !heights.equals("")) {
+	  try {
+	      heightv = Integer.valueOf(heights);
+	      if (heightv < 1) 
+		  writeErrorPage(req, out, null, "height (" + StringEscapeUtils.escapeHtml(heights) + ") must be a positive integer", oururl);
+	      else
+		  placement.getPlacementConfig().setProperty("height", heights );
+	  } catch (NumberFormatException e) {
     	  
-    	  writeErrorPage(req, out, null, StringEscapeUtils.escapeHtml(heights) + " is not a valid frame height", oururl);
-      }
-      
-      placement.getPlacementConfig().setProperty("height", heights );
+	      writeErrorPage(req, out, null, StringEscapeUtils.escapeHtml(heights) + " is not a valid frame height", oururl);
+	  }
+      } // null doesn't change current value
       
       String newtitle = safetrim(req.getParameter("title"));
       if (newtitle != null && "".equals(newtitle))
