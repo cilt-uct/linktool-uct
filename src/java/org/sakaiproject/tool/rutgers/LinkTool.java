@@ -536,7 +536,7 @@ public class LinkTool extends HttpServlet
       out.println("<p class=\"shorttext\"><label for=\"height\">Height</label><input id=\"height\" type=\"text\" name=\"height\" value=\"" +
                   Validator.escapeHtml(config.getProperty("height")) + "\"/></p>");
       out.println("<p class=\"shorttext\"><label for=\"pagetitle\">Page title</label><input id=\"pagetitle\" type=\"text\" name=\"title\" value=\"" +
-                     placement.getTitle() + "\"/></p>");
+		  Validator.escapeHtml(placement.getTitle()) + "\"/></p>");
       out.println("<p class=\"act\"><input type=\"submit\" value=\"Update Configuration\"/></p>");
       out.println("</form>");
       out.println("<span style=\"display: block;\" class=\"instruction\">");
