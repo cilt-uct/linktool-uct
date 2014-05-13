@@ -4,13 +4,13 @@
   <parent>
     <artifactId>base</artifactId>
     <groupId>org.sakaiproject</groupId>
-    <version>10-SNAPSHOT</version>
+    <version>11-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <name>Sakai Link Tool Project</name>
   <groupId>org.sakaiproject</groupId>
   <artifactId>sakai-rutgers-linktool</artifactId>
-  <version>10-SNAPSHOT</version>
+  <version>11-SNAPSHOT</version>
   <organization>
     <name>Rutgers University</name>
     <url>http://sakai.rutgers.edu/</url>
