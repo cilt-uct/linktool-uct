@@ -390,7 +390,7 @@ public class LinkTool extends HttpServlet
             
             signature = sign(command.toString());
             url = url + "?" + command + "&sign=" + signature;
-            bodyonload.append("window.location = '" + Validator.escapeJsQuoted(Validator.escapeHtml(url)) + "';");
+            bodyonload.append("window.location = '" + StringEscapeUtils.escapeJavaScript(Validator.escapeHtml(url)) + "';");
          } catch (Exception e) {
             M_log.debug("Exception signing command", e);
          }
