@@ -53,8 +53,9 @@ import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.sakaiproject.authz.cover.AuthzGroupService;
+import org.sakaiproject.authz.api.AuthzGroupService;
 import org.sakaiproject.authz.cover.SecurityService;
+import org.sakaiproject.component.cover.ComponentManager;
 import org.sakaiproject.component.cover.ServerConfigurationService;
 import org.sakaiproject.site.api.Site;
 import org.sakaiproject.site.api.SitePage;
@@ -104,6 +105,9 @@ public class LinkTool extends HttpServlet
    
    private Set<String> illegalParams;
    private Pattern legalKeys;
+
+   /** AuthzGroupService */
+   protected static AuthzGroupService authzGroupService = null;
    
    /**
     * Access the Servlet's information display.
@@ -125,6 +129,9 @@ public class LinkTool extends HttpServlet
    public void init(ServletConfig config) throws ServletException
    {
       super.init(config);
+
+      // Services
+      authzGroupService = (AuthzGroupService) ComponentManager.get(AuthzGroupService.class);
 
       String homedir = ServerConfigurationService.getString("linktool.home", ServerConfigurationService.getSakaiHomePath());
       if (homedir == null)
@@ -316,12 +323,12 @@ public class LinkTool extends HttpServlet
       }
       
       if (realmId != null && userid != null && !isAnon) {
-    	  rolename = AuthzGroupService.getUserRole(userid, realmId);
+    	  rolename = authzGroupService.getUserRole(userid, realmId);
       }
       
       // Check for .auth or .anon role
       if (rolename == null)
-         rolename = isAnon ? AuthzGroupService.ANON_ROLE : AuthzGroupService.AUTH_ROLE;
+         rolename = isAnon ? authzGroupService.ANON_ROLE : authzGroupService.AUTH_ROLE;
       
       sessionid = (sessionid != null) ? encrypt(sessionid) : "";
       
