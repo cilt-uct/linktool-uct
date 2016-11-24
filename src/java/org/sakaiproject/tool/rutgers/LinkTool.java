@@ -542,13 +542,8 @@ public class LinkTool extends HttpServlet
                   Validator.escapeHtml(config.getProperty("url")) + "\"/></p>");
       out.println("<p class=\"shorttext\"><label for=\"height\">Height</label><input id=\"height\" type=\"text\" name=\"height\" value=\"" +
                   Validator.escapeHtml(config.getProperty("height")) + "\"/></p>");
-      out.println("<p class=\"shorttext\"><label for=\"pagetitle\">Page title</label><input id=\"pagetitle\" type=\"text\" name=\"title\" value=\"" +
-		  Validator.escapeHtml(placement.getTitle()) + "\"/></p>");
       out.println("<p class=\"act\"><input type=\"submit\" value=\"Update Configuration\"/></p>");
       out.println("</form>");
-      out.println("<span style=\"display: block;\" class=\"instruction\">");
-      out.println("Setting the Page title changes the title for the entire page (i.e. what is in the left margin). If there is more than one tool on the page, this may not be what you want to do.");
-      out.println("</span>");
       out.println("<h3>Session Access</h3>");
       out.println("<div class=\"instruction\">");
       out.println("<p>This section allows you to request a cryptographically signed object that can be used to request access to a Sakai session ID. Session IDs are needed to access most of the web services.</p>");
@@ -567,7 +562,7 @@ public class LinkTool extends HttpServlet
          out.println("<p>For applications that need to create sites or users, or deal with many sites, an administrator can generate objects with more privileges.</p>");
          out.println("</div>");
          out.println("<form method='post' action='" + oururl + "?SignForm'>");
-         out.println("<p class=\"act\"><input type=submit value='Generate Signed Object'></p");
+         out.println("<p class=\"act\"><input type=submit value='Generate Signed Object'></p>");
          out.println("</form>");
       } else {
          out.println("<p>As a privileged user, you can request an object that will generate a session logged in as any user. For applications that just deal with a single site, and which need site owner privileges, you should ask for an object in the name of the site owner. For applications that need to create site or users, or deal with many sites, you should ask for an object in the name of a user with administrative privileges. If you generate an object in the name of an administrator, please be careful only to put it in sites whose security you trust.</p><p>You can also request a second kind of object. This one will generate a session for the current user. That is, when an end user accesses an application, this will return a session for that end user. Please be careful about what sites you put this in, because it will allow the owner of the site to compromise the privacy of any user using the site.</p>");
@@ -711,28 +706,7 @@ public class LinkTool extends HttpServlet
 	      writeErrorPage(req, out, null, StringEscapeUtils.escapeHtml(heights) + " is not a valid frame height", oururl);
 	  }
       } // null doesn't change current value
-      
-      String newtitle = safetrim(req.getParameter("title"));
-      if (newtitle != null && "".equals(newtitle))
-         newtitle = null;
-      
-      if (newtitle != null) {
-         
-         placement.setTitle(safetrim(req.getParameter("title")));
-         
-         if (toolConfig != null) {
-            try {
-               Site site = SiteService.getSite(toolConfig.getSiteId());
-               SitePage page = site.getPage(toolConfig.getPageId());
-               page.setTitle(safetrim(req.getParameter("title")));
-               SiteService.save(site);
-            } catch (Exception e) {
-               M_log.debug("Exception setting page title", e);
-            }
-         }
-         
-      }
-      
+
       placement.save();
       
       element = Web.escapeJavascript("Main" + placement.getId());
