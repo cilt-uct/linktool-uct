@@ -493,7 +493,7 @@ public class LinkTool extends HttpServlet
       
       out.println(headHtml + sakaiHead + headHtml1 + (height+50) + "px" + headHtml2 + bodyonload + headHtml3);
       out.println("<div class=\"portletBody\">");
-      out.println("<div class=\"navIntraTool\"><a href='" + oururl + "?Setup'>Setup</a></div>");
+      out.println("<ul class=\"navIntraTool actionToolBar\"><li class=\"firstToolBarItem\"><span class=\"\"><a href='" + oururl + "?Setup'>Setup</a></span><li></ul>");
       out.println("<iframe src=\"" + Validator.escapeHtml(url) + "\" height=\"" + height + "\" " + 
                   "width=\"100%\" frameborder=\"0\" marginwidth=\"0\" marginheight=\"0\" scrolling=\"auto\" style=\"padding: 0.15em 0em 0em 0em;\" />");
       out.println("</div>");
