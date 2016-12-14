@@ -249,15 +249,6 @@ public class LinkTool extends HttpServlet
       
       boolean isAnon = false;
       
-      // set frame height
-      
-      StringBuffer bodyonload = new StringBuffer();
-      if (placement != null)
-      {
-         element = Web.escapeJavascript("Main" + placement.getId( ));
-         bodyonload.append("setFrameHeight('" + element + "');");
-      }
-      
       // prepare the data for the redirect
       
       // we can always get the userid from the session
@@ -397,7 +388,6 @@ public class LinkTool extends HttpServlet
             
             signature = sign(command.toString());
             url = url + "?" + command + "&sign=" + signature;
-            bodyonload.append("window.location = '" + StringEscapeUtils.escapeJavaScript(Validator.escapeHtml(url)) + "';");
          } catch (Exception e) {
             M_log.debug("Exception signing command", e);
          }
@@ -445,14 +435,9 @@ public class LinkTool extends HttpServlet
          if (writeOwnerPage(req, out, height, url, element, oururl))
             return;
       }
-      
-      // default output - show the requested application
-      out.println(headHtml + headHtml1 + height + "px" + headHtml2 + bodyonload + headHtml3);
-      out.println(tailHtml);
-      
-      
-      //       res.sendRedirect(res.encodeRedirectURL(config.getProperty("url", "/")));
-      
+
+      // Always render this in an iframe
+      writeToolPage(req, out, height, url, element, oururl);
    }
    
    protected boolean isTrusted(Properties config) {
@@ -495,7 +480,44 @@ public class LinkTool extends HttpServlet
       out.println("<div class=\"portletBody\">");
       out.println("<ul class=\"navIntraTool actionToolBar\"><li class=\"firstToolBarItem\"><span class=\"\"><a href='" + oururl + "?Setup'>Setup</a></span><li></ul>");
       out.println("<iframe src=\"" + Validator.escapeHtml(url) + "\" height=\"" + height + "\" " + 
-                  "width=\"100%\" frameborder=\"0\" marginwidth=\"0\" marginheight=\"0\" scrolling=\"auto\" style=\"padding: 0.15em 0em 0em 0em;\" />");
+                  "width=\"100%\" frameborder=\"0\" marginwidth=\"0\" marginheight=\"0\" scrolling=\"auto\" style=\"padding: 0.15em 0em 0em 0em;\"></iframe>");
+      out.println("</div>");
+      out.println(tailHtml);
+      
+      return true;
+   }
+   
+   /**
+    * Called by doGet to display the main contents.
+    * 
+    * @param out
+    *        printwriter generating web display
+    * @param height
+    *        height of the window to display
+    * @param url
+    *        url to redirect to
+    * @param element
+    *        Javascript window id
+    * @param oururl
+    *        URL for this application
+    */
+   
+   private boolean writeToolPage(HttpServletRequest req, PrintWriter out, int height, String url, String element, String oururl) {
+      
+      String bodyonload = "";
+      
+      String sakaiHead = (String) req.getAttribute("sakai.html.head");
+      
+      if (url == null)
+         return false;
+      
+      if (element != null)
+         bodyonload = "setFrameHeight('" + element + "');";
+      
+      out.println(headHtml + sakaiHead + headHtml1 + (height+50) + "px" + headHtml2 + bodyonload + headHtml3);
+      out.println("<div class=\"portletBody\">");
+      out.println("<iframe src=\"" + Validator.escapeHtml(url) + "\" height=\"" + height + "\" " + 
+                  "width=\"100%\" frameborder=\"0\" marginwidth=\"0\" marginheight=\"0\" scrolling=\"auto\" style=\"padding: 0.15em 0em 0em 0em;\"></iframe>");
       out.println("</div>");
       out.println(tailHtml);
       
