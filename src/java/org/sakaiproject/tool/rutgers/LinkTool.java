@@ -53,8 +53,9 @@ import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.sakaiproject.authz.cover.AuthzGroupService;
+import org.sakaiproject.authz.api.AuthzGroupService;
 import org.sakaiproject.authz.cover.SecurityService;
+import org.sakaiproject.component.cover.ComponentManager;
 import org.sakaiproject.component.cover.ServerConfigurationService;
 import org.sakaiproject.site.api.Site;
 import org.sakaiproject.site.api.SitePage;
@@ -104,6 +105,9 @@ public class LinkTool extends HttpServlet
    
    private Set<String> illegalParams;
    private Pattern legalKeys;
+
+   /** AuthzGroupService */
+   protected static AuthzGroupService authzGroupService = null;
    
    /**
     * Access the Servlet's information display.
@@ -125,6 +129,9 @@ public class LinkTool extends HttpServlet
    public void init(ServletConfig config) throws ServletException
    {
       super.init(config);
+
+      // Services
+      authzGroupService = (AuthzGroupService) ComponentManager.get(AuthzGroupService.class);
 
       String homedir = ServerConfigurationService.getString("linktool.home", ServerConfigurationService.getSakaiHomePath());
       if (homedir == null)
@@ -242,15 +249,6 @@ public class LinkTool extends HttpServlet
       
       boolean isAnon = false;
       
-      // set frame height
-      
-      StringBuffer bodyonload = new StringBuffer();
-      if (placement != null)
-      {
-         element = Web.escapeJavascript("Main" + placement.getId( ));
-         bodyonload.append("setFrameHeight('" + element + "');");
-      }
-      
       // prepare the data for the redirect
       
       // we can always get the userid from the session
@@ -316,12 +314,12 @@ public class LinkTool extends HttpServlet
       }
       
       if (realmId != null && userid != null && !isAnon) {
-    	  rolename = AuthzGroupService.getUserRole(userid, realmId);
+    	  rolename = authzGroupService.getUserRole(userid, realmId);
       }
       
       // Check for .auth or .anon role
       if (rolename == null)
-         rolename = isAnon ? AuthzGroupService.ANON_ROLE : AuthzGroupService.AUTH_ROLE;
+         rolename = isAnon ? authzGroupService.ANON_ROLE : authzGroupService.AUTH_ROLE;
       
       sessionid = (sessionid != null) ? encrypt(sessionid) : "";
       
@@ -390,7 +388,6 @@ public class LinkTool extends HttpServlet
             
             signature = sign(command.toString());
             url = url + "?" + command + "&sign=" + signature;
-            bodyonload.append("window.location = '" + Validator.escapeJsQuoted(Validator.escapeHtml(url)) + "';");
          } catch (Exception e) {
             M_log.debug("Exception signing command", e);
          }
@@ -438,14 +435,9 @@ public class LinkTool extends HttpServlet
          if (writeOwnerPage(req, out, height, url, element, oururl))
             return;
       }
-      
-      // default output - show the requested application
-      out.println(headHtml + headHtml1 + height + "px" + headHtml2 + bodyonload + headHtml3);
-      out.println(tailHtml);
-      
-      
-      //       res.sendRedirect(res.encodeRedirectURL(config.getProperty("url", "/")));
-      
+
+      // Always render this in an iframe
+      writeToolPage(req, out, height, url, element, oururl);
    }
    
    protected boolean isTrusted(Properties config) {
@@ -486,9 +478,46 @@ public class LinkTool extends HttpServlet
       
       out.println(headHtml + sakaiHead + headHtml1 + (height+50) + "px" + headHtml2 + bodyonload + headHtml3);
       out.println("<div class=\"portletBody\">");
-      out.println("<div class=\"navIntraTool\"><a href='" + oururl + "?Setup'>Setup</a></div>");
+      out.println("<ul class=\"navIntraTool actionToolBar\"><li class=\"firstToolBarItem\"><span class=\"\"><a href='" + oururl + "?Setup'>Setup</a></span><li></ul>");
       out.println("<iframe src=\"" + Validator.escapeHtml(url) + "\" height=\"" + height + "\" " + 
-                  "width=\"100%\" frameborder=\"0\" marginwidth=\"0\" marginheight=\"0\" scrolling=\"auto\" style=\"padding: 0.15em 0em 0em 0em;\" />");
+                  "width=\"100%\" frameborder=\"0\" marginwidth=\"0\" marginheight=\"0\" scrolling=\"auto\" style=\"padding: 0.15em 0em 0em 0em;\"></iframe>");
+      out.println("</div>");
+      out.println(tailHtml);
+      
+      return true;
+   }
+   
+   /**
+    * Called by doGet to display the main contents.
+    * 
+    * @param out
+    *        printwriter generating web display
+    * @param height
+    *        height of the window to display
+    * @param url
+    *        url to redirect to
+    * @param element
+    *        Javascript window id
+    * @param oururl
+    *        URL for this application
+    */
+   
+   private boolean writeToolPage(HttpServletRequest req, PrintWriter out, int height, String url, String element, String oururl) {
+      
+      String bodyonload = "";
+      
+      String sakaiHead = (String) req.getAttribute("sakai.html.head");
+      
+      if (url == null)
+         return false;
+      
+      if (element != null)
+         bodyonload = "setFrameHeight('" + element + "');";
+      
+      out.println(headHtml + sakaiHead + headHtml1 + (height+50) + "px" + headHtml2 + bodyonload + headHtml3);
+      out.println("<div class=\"portletBody\">");
+      out.println("<iframe src=\"" + Validator.escapeHtml(url) + "\" height=\"" + height + "\" " + 
+                  "width=\"100%\" frameborder=\"0\" marginwidth=\"0\" marginheight=\"0\" scrolling=\"auto\" style=\"padding: 0.15em 0em 0em 0em;\"></iframe>");
       out.println("</div>");
       out.println(tailHtml);
       
@@ -535,13 +564,8 @@ public class LinkTool extends HttpServlet
                   Validator.escapeHtml(config.getProperty("url")) + "\"/></p>");
       out.println("<p class=\"shorttext\"><label for=\"height\">Height</label><input id=\"height\" type=\"text\" name=\"height\" value=\"" +
                   Validator.escapeHtml(config.getProperty("height")) + "\"/></p>");
-      out.println("<p class=\"shorttext\"><label for=\"pagetitle\">Page title</label><input id=\"pagetitle\" type=\"text\" name=\"title\" value=\"" +
-		  Validator.escapeHtml(placement.getTitle()) + "\"/></p>");
       out.println("<p class=\"act\"><input type=\"submit\" value=\"Update Configuration\"/></p>");
       out.println("</form>");
-      out.println("<span style=\"display: block;\" class=\"instruction\">");
-      out.println("Setting the Page title changes the title for the entire page (i.e. what is in the left margin). If there is more than one tool on the page, this may not be what you want to do.");
-      out.println("</span>");
       out.println("<h3>Session Access</h3>");
       out.println("<div class=\"instruction\">");
       out.println("<p>This section allows you to request a cryptographically signed object that can be used to request access to a Sakai session ID. Session IDs are needed to access most of the web services.</p>");
@@ -560,7 +584,7 @@ public class LinkTool extends HttpServlet
          out.println("<p>For applications that need to create sites or users, or deal with many sites, an administrator can generate objects with more privileges.</p>");
          out.println("</div>");
          out.println("<form method='post' action='" + oururl + "?SignForm'>");
-         out.println("<p class=\"act\"><input type=submit value='Generate Signed Object'></p");
+         out.println("<p class=\"act\"><input type=submit value='Generate Signed Object'></p>");
          out.println("</form>");
       } else {
          out.println("<p>As a privileged user, you can request an object that will generate a session logged in as any user. For applications that just deal with a single site, and which need site owner privileges, you should ask for an object in the name of the site owner. For applications that need to create site or users, or deal with many sites, you should ask for an object in the name of a user with administrative privileges. If you generate an object in the name of an administrator, please be careful only to put it in sites whose security you trust.</p><p>You can also request a second kind of object. This one will generate a session for the current user. That is, when an end user accesses an application, this will return a session for that end user. Please be careful about what sites you put this in, because it will allow the owner of the site to compromise the privacy of any user using the site.</p>");
@@ -704,28 +728,7 @@ public class LinkTool extends HttpServlet
 	      writeErrorPage(req, out, null, StringEscapeUtils.escapeHtml(heights) + " is not a valid frame height", oururl);
 	  }
       } // null doesn't change current value
-      
-      String newtitle = safetrim(req.getParameter("title"));
-      if (newtitle != null && "".equals(newtitle))
-         newtitle = null;
-      
-      if (newtitle != null) {
-         
-         placement.setTitle(safetrim(req.getParameter("title")));
-         
-         if (toolConfig != null) {
-            try {
-               Site site = SiteService.getSite(toolConfig.getSiteId());
-               SitePage page = site.getPage(toolConfig.getPageId());
-               page.setTitle(safetrim(req.getParameter("title")));
-               SiteService.save(site);
-            } catch (Exception e) {
-               M_log.debug("Exception setting page title", e);
-            }
-         }
-         
-      }
-      
+
       placement.save();
       
       element = Web.escapeJavascript("Main" + placement.getId());
