@@ -49,7 +49,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.sakaiproject.authz.api.AuthzGroupService;
 import org.sakaiproject.authz.cover.SecurityService;
 import org.sakaiproject.component.cover.ComponentManager;
@@ -717,12 +717,12 @@ public class LinkTool extends HttpServlet
 	  try {
 	      heightv = Integer.valueOf(heights);
 	      if (heightv < 1) 
-		  writeErrorPage(req, out, null, "height (" + StringEscapeUtils.escapeHtml(heights) + ") must be a positive integer", oururl);
+		  writeErrorPage(req, out, null, "height (" + StringEscapeUtils.escapeHtml3(heights) + ") must be a positive integer", oururl);
 	      else
 		  placement.getPlacementConfig().setProperty("height", heights );
 	  } catch (NumberFormatException e) {
     	  
-	      writeErrorPage(req, out, null, StringEscapeUtils.escapeHtml(heights) + " is not a valid frame height", oururl);
+	      writeErrorPage(req, out, null, StringEscapeUtils.escapeHtml3(heights) + " is not a valid frame height", oururl);
 	  }
       } // null doesn't change current value
 
