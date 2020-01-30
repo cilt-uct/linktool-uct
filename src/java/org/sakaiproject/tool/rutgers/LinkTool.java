@@ -49,7 +49,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.text.StringEscapeUtils;
 import org.sakaiproject.authz.api.AuthzGroupService;
 import org.sakaiproject.authz.cover.SecurityService;
 import org.sakaiproject.component.cover.ComponentManager;
@@ -62,8 +62,7 @@ import org.sakaiproject.tool.cover.SessionManager;
 import org.sakaiproject.tool.cover.ToolManager;
 import org.sakaiproject.user.api.User;
 import org.sakaiproject.user.cover.UserDirectoryService;
-import org.sakaiproject.util.Validator;
-import org.sakaiproject.util.Web;
+import org.sakaiproject.util.api.FormattedText;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -476,7 +475,7 @@ public class LinkTool extends HttpServlet
       out.println(headHtml + sakaiHead + headHtml1 + (height+50) + "px" + headHtml2 + bodyonload + headHtml3);
       out.println("<div class=\"portletBody\">");
       out.println("<ul class=\"navIntraTool actionToolBar\"><li class=\"firstToolBarItem\"><span class=\"\"><a href='" + oururl + "?Setup'>Setup</a></span><li></ul>");
-      out.println("<iframe src=\"" + Validator.escapeHtml(url) + "\" height=\"" + height + "\" " + 
+      out.println("<iframe src=\"" + ComponentManager.get(FormattedText.class).escapeHtml(url) + "\" height=\"" + height + "\" " + 
                   "width=\"100%\" frameborder=\"0\" marginwidth=\"0\" marginheight=\"0\" scrolling=\"auto\" style=\"padding: 0.15em 0em 0em 0em;\"></iframe>");
       out.println("</div>");
       out.println(tailHtml);
@@ -513,7 +512,7 @@ public class LinkTool extends HttpServlet
       
       out.println(headHtml + sakaiHead + headHtml1 + (height+50) + "px" + headHtml2 + bodyonload + headHtml3);
       out.println("<div class=\"portletBody\">");
-      out.println("<iframe src=\"" + Validator.escapeHtml(url) + "\" height=\"" + height + "\" " + 
+      out.println("<iframe src=\"" + ComponentManager.get(FormattedText.class).escapeHtml(url) + "\" height=\"" + height + "\" " + 
                   "width=\"100%\" frameborder=\"0\" marginwidth=\"0\" marginheight=\"0\" scrolling=\"auto\" style=\"padding: 0.15em 0em 0em 0em;\"></iframe>");
       out.println("</div>");
       out.println(tailHtml);
@@ -557,10 +556,11 @@ public class LinkTool extends HttpServlet
       out.println("<div class='portletBody'><h2>Setup</h2>");
       out.println("<form method='post' action='" + oururl + "?SetupForm'>");
       // <p class="shorttext"><label for="id">Description</label><textarea id="description_0" name="description_0" rows="5" cols="80" wrap="virtual"></textarea></p>
+      FormattedText formattedText = ComponentManager.get(FormattedText.class);
       out.println("<p class=\"shorttext\"><label for=\"url\">URL</label><input id=\"url\" type=\"text\" name=\"url\" size=\"70\" value=\"" +
-                  Validator.escapeHtml(config.getProperty("url")) + "\"/></p>");
+    		  formattedText.escapeHtml(config.getProperty("url")) + "\"/></p>");
       out.println("<p class=\"shorttext\"><label for=\"height\">Height</label><input id=\"height\" type=\"text\" name=\"height\" value=\"" +
-                  Validator.escapeHtml(config.getProperty("height")) + "\"/></p>");
+    		  formattedText.escapeHtml(config.getProperty("height")) + "\"/></p>");
       out.println("<p class=\"act\"><input type=\"submit\" value=\"Update Configuration\"/></p>");
       out.println("</form>");
       out.println("<h3>Session Access</h3>");
@@ -728,7 +728,7 @@ public class LinkTool extends HttpServlet
 
       placement.save();
       
-      element = Web.escapeJavascript("Main" + placement.getId());
+      element = ComponentManager.get(FormattedText.class).escapeJavascript("Main" + placement.getId());
       
       config = placement.getConfig();
       
@@ -767,7 +767,7 @@ public class LinkTool extends HttpServlet
       String bodyonload = null;
       
       if (placement != null)
-         element = Web.escapeJavascript("Main" + placement.getId( ));
+         element = ComponentManager.get(FormattedText.class).escapeJavascript("Main" + placement.getId( ));
       else {
          writeErrorPage(req, out, null, "Unable to find the current tool", oururl);
          return;
@@ -836,7 +836,7 @@ public class LinkTool extends HttpServlet
       
       out.println("<div class=\"portletBody\"><h2>Your object</h2>");
       out.println("<p>Here is your object. You should copy it and then paste it into a configuration file to be used in your application.</p>");
-      out.println("<p>" + Web.escapeHtml(object) + "</p>");
+      out.println("<p>" + ComponentManager.get(FormattedText.class).escapeHtml(object) + "</p>");
       
       out.println("<p><a href='" + oururl + "?panel=Main'>Return to tool</a></p>");
       out.println("</div>");
