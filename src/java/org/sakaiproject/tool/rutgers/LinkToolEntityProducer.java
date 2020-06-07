@@ -116,9 +116,7 @@ public class LinkToolEntityProducer implements EntityProducer, EntityTransferrer
     // tools. Note that the tools are loaded when LinkTool.class is loaded. That's
     // often after this class, so at init time these lists would be empty.
    
-   /**
-    * {@inheritDoc}
-    */
+   @Override
    public String[] myToolIds()
    {
       Set<String>keywords = new HashSet<String>();
@@ -127,12 +125,12 @@ public class LinkToolEntityProducer implements EntityProducer, EntityTransferrer
       String[] toolIds = new String[tools.size()];
       int i = 0;
       for (Tool tool: tools)
-	  toolIds[i++] = tool.getId();
-      //      System.out.println("mytoolids " + toolIds);
+      toolIds[i++] = tool.getId();
       return toolIds;
    }
    
-   public List<String> myToolList()
+   
+   private List<String> myToolList()
    {
       Set<String>keywords = new HashSet<String>();
       keywords.add("linktool");
@@ -141,7 +139,6 @@ public class LinkToolEntityProducer implements EntityProducer, EntityTransferrer
       int i = 0;
       for (Tool tool: tools)
 	  toolList.add(tool.getId());
-      //      System.out.println("mytoollist " + toolList);
       return toolList;
    }
 
@@ -153,9 +150,7 @@ public class LinkToolEntityProducer implements EntityProducer, EntityTransferrer
       return LinkToolEntityProducer.class.getName();
    }
    
-   /**
-    * {@inheritDoc}
-    */
+   @Override
    public String archive(String siteId, Document doc, Stack stack, String archivePath, List attachments)
    {
       //prepare the buffer for the results log
@@ -242,71 +237,55 @@ public class LinkToolEntityProducer implements EntityProducer, EntityTransferrer
       return results.toString();
    }
    
-   /**
-    * {@inheritDoc}
-    */
+   @Override
    public Entity getEntity(Reference ref)
    {
       // I don't see how there could be a reference of this kind
        return null;
    }
 
-   /**
-    * {@inheritDoc}
-    */
+   @Override
    public Collection getEntityAuthzGroups(Reference ref, String userId)
    {
       //TODO implement this
       return null;
    }
 
-   /**
-    * {@inheritDoc}
-    */
+   @Override
    public String getEntityDescription(Reference ref)
    {
        // not needed
        return null;
    }
 
-   /* (non-Javadoc)
-    * @see org.sakaiproject.entity.api.EntityProducer#getEntityResourceProperties(org.sakaiproject.entity.api.Reference)
-    */
+   @Override
    public ResourceProperties getEntityResourceProperties(Reference ref) {
       // TODO Auto-generated method stub
       return null;
    }
 
-   /**
-    * {@inheritDoc}
-    */
+   @Override
    public String getEntityUrl(Reference ref)
    {
        // not needed
        return null;
    }
 
-   /**
-    * {@inheritDoc}
-    */
+   @Override
    public HttpAccess getHttpAccess()
    {
        // not for now
        return null;
    }
 
-   /**
-    * {@inheritDoc}
-    */
+   @Override
    public String getLabel() {
        return LINKTOOL;
    }
 
 
 
-   /**
-    * {@inheritDoc}
-    */
+   @Override
    public String merge(String siteId, Element root, String archivePath, String fromSiteId, Map attachmentNames, Map userIdTrans,
          Set userListAllowImport)
    {
@@ -419,31 +398,28 @@ public class LinkToolEntityProducer implements EntityProducer, EntityTransferrer
    } // merge
 
 
-   /**
-    * {@inheritDoc}
-    */
+   @Override
    public boolean parseEntityReference(String reference, Reference ref)
    {
        // not for the moment
        return false;
    }
 
-    public String trimToNull(String value)
-    {
+
+   private String trimToNull(String value) {
 	if (value == null) return null;
 	value = value.trim();
 	if (value.length() == 0) return null;
 	return value;
     }
 
-   /**
-    * {@inheritDoc}
-    */
+   @Override
    public boolean willArchiveMerge()
    {
       return true;
    }
    
+	@Override
 	public void transferCopyEntities(String fromContext, String toContext, List ids)
 	{
 	        log.debug("linktool transferCopyEntities");
@@ -513,6 +489,7 @@ public class LinkToolEntityProducer implements EntityProducer, EntityTransferrer
 
 	}
 
+	@Override
 	public void transferCopyEntities(String fromContext, String toContext, List ids, boolean cleanup)
 	{	
 		try
